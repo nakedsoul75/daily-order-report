@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import subprocess
 import sys
 import traceback
 from datetime import datetime, timedelta
@@ -118,25 +120,89 @@ def main() -> int:
         return 1
 
     stats = report_builder.aggregate(orders, expected_subchannels=expected)
-    messages = report_builder.format_report(slot_label, period_label, stats)
 
-    for i, msg in enumerate(messages, 1):
-        print(f"\n{'=' * 50}\n[Message {i}/{len(messages)}] ({len(msg)} chars)\n{'=' * 50}")
-        print(msg)
+    # 1. Generate HTML report
+    date_str = now_kst.strftime("%Y-%m-%d")
+    slot_filename = f"{date_str}-{args.slot}.html"
+    reports_dir = ROOT / "docs" / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / slot_filename
+    html = report_builder.format_html_report(
+        slot_label, period_label, stats,
+        generated_at=now_kst.strftime("%Y-%m-%d %H:%M KST"),
+    )
+    report_path.write_text(html, encoding="utf-8")
+    print(f"[HTML] Saved: {report_path} ({len(html):,} chars)")
+
+    # 2. Update reports index
+    _update_reports_index(reports_dir)
+
+    # 3. Build report URL (GitHub Pages)
+    repo_url_env = os.getenv("REPORT_BASE_URL", "https://nakedsoul75.github.io/daily-order-report/reports")
+    report_url = f"{repo_url_env.rstrip('/')}/{slot_filename}"
+
+    # 4. Auto-commit and push (so GitHub Pages updates)
+    if not args.no_send and not os.getenv("SKIP_GIT_PUSH"):
+        _git_publish(report_path, slot_label)
+
+    # 5. Build short Kakao message with URL
+    short_msg = report_builder.format_short_kakao(slot_label, period_label, stats, report_url)
+    print(f"\n{'=' * 50}\n[Kakao Message] ({len(short_msg)} chars)\n{'=' * 50}")
+    print(short_msg)
     print("=" * 50 + "\n")
 
     if args.no_send or os.getenv("DRY_RUN") == "true":
-        print(f"[DRY RUN] Skipping Kakao send ({len(messages)} message(s) would be sent).")
+        print(f"[DRY RUN] Skipping Kakao send. URL: {report_url}")
         return 0
 
     kc = kakao_client.from_env()
-    import time as _t
-    for i, msg in enumerate(messages, 1):
-        result = kc.send_text(msg)
-        print(f"[SEND {i}/{len(messages)}] Kakao response: {result}")
-        if i < len(messages):
-            _t.sleep(1)  # avoid rate-limit on consecutive sends
+    result = kc.send_text(short_msg, link_url=report_url)
+    print(f"[SEND] Kakao response: {result}")
+    print(f"[REPORT URL] {report_url}")
     return 0
+
+
+def _update_reports_index(reports_dir: Path) -> None:
+    """Generate index.html listing all reports, newest first."""
+    pattern = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\w+)\.html$")
+    entries = []
+    for f in reports_dir.iterdir():
+        m = pattern.match(f.name)
+        if m and f.name != "index.html":
+            entries.append((m.group(1), m.group(2), f.name))
+    entries.sort(key=lambda e: (e[0], e[1]), reverse=True)
+    index_html = report_builder.format_index_html(entries)
+    (reports_dir / "index.html").write_text(index_html, encoding="utf-8")
+
+
+def _git_publish(report_path: Path, slot_label: str) -> None:
+    """Commit and push the new report so GitHub Pages updates."""
+    try:
+        subprocess.run(
+            ["git", "add", "docs/reports/"],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        )
+        # Check if anything actually changed
+        diff = subprocess.run(
+            ["git", "diff", "--cached", "--quiet"],
+            cwd=ROOT, capture_output=True,
+        )
+        if diff.returncode == 0:
+            print("[GIT] No changes to push.")
+            return
+        subprocess.run(
+            ["git", "commit", "-m", f"Report: {slot_label}"],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        )
+        subprocess.run(
+            ["git", "push", "origin", "main"],
+            cwd=ROOT, check=True, capture_output=True, text=True, timeout=60,
+        )
+        print("[GIT] Pushed to GitHub. Pages will update in 1-2 min.")
+    except subprocess.CalledProcessError as e:
+        print(f"[GIT WARN] {e.stderr if e.stderr else e}")
+    except Exception as e:
+        print(f"[GIT WARN] {type(e).__name__}: {e}")
 
 
 if __name__ == "__main__":
