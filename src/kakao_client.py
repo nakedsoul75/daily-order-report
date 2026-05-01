@@ -12,22 +12,22 @@ class KakaoClient:
     TOKEN_URL = "https://kauth.kakao.com/oauth/token"
     SEND_URL = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
 
-    def __init__(self, rest_api_key: str, refresh_token: str) -> None:
+    def __init__(self, rest_api_key: str, refresh_token: str, client_secret: str | None = None) -> None:
         self.rest_api_key = rest_api_key
         self.refresh_token = refresh_token
+        self.client_secret = client_secret
         self.access_token: str | None = None
         self.new_refresh_token: str | None = None  # if rotated
 
     def _refresh_access_token(self) -> None:
-        resp = requests.post(
-            self.TOKEN_URL,
-            data={
-                "grant_type": "refresh_token",
-                "client_id": self.rest_api_key,
-                "refresh_token": self.refresh_token,
-            },
-            timeout=15,
-        )
+        data = {
+            "grant_type": "refresh_token",
+            "client_id": self.rest_api_key,
+            "refresh_token": self.refresh_token,
+        }
+        if self.client_secret:
+            data["client_secret"] = self.client_secret
+        resp = requests.post(self.TOKEN_URL, data=data, timeout=15)
         resp.raise_for_status()
         body = resp.json()
         self.access_token = body["access_token"]
@@ -63,4 +63,5 @@ def from_env() -> KakaoClient:
     return KakaoClient(
         rest_api_key=os.environ["KAKAO_REST_API_KEY"],
         refresh_token=os.environ["KAKAO_REFRESH_TOKEN"],
+        client_secret=os.environ.get("KAKAO_CLIENT_SECRET") or None,
     )

@@ -4,7 +4,7 @@ from __future__ import annotations
 import base64
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import bcrypt
@@ -58,37 +58,45 @@ class SmartStoreClient:
     ) -> list[dict[str, Any]]:
         """
         Fetch orders changed within [start_dt, end_dt].
-        Naver uses 'lastChangedFrom/To' (ISO8601 with timezone).
+        Naver uses 'lastChangedFrom/To' (ISO8601 millisec with timezone).
+        Time range is limited to 24h per call — auto-chunk if longer.
         """
         self._ensure_token()
-        all_orders: list[dict[str, Any]] = []
+        all_ids: list[str] = []
 
-        params = {
-            "lastChangedFrom": start_dt.isoformat(timespec="seconds"),
-            "lastChangedTo": end_dt.isoformat(timespec="seconds"),
-            "lastChangedType": "PAYED",  # 결제완료 기준
-        }
-        resp = requests.get(
-            f"{self.BASE_URL}/v1/pay-order/seller/product-orders/last-changed-statuses",
-            headers={"Authorization": f"Bearer {self.access_token}"},
-            params=params,
-            timeout=30,
-        )
-        if resp.status_code == 401:
-            self._refresh_access_token()
-            return self.fetch_orders(start_dt, end_dt)
-        resp.raise_for_status()
-        change_data = resp.json().get("data", {})
-        product_order_ids = [
-            row["productOrderId"]
-            for row in change_data.get("lastChangeStatuses", [])
-        ]
-        if not product_order_ids:
+        # Chunk into 24h windows
+        cur = start_dt
+        while cur < end_dt:
+            chunk_end = min(cur + timedelta(hours=24, seconds=-1), end_dt)
+            params = {
+                "lastChangedFrom": cur.isoformat(timespec="milliseconds"),
+                "lastChangedTo": chunk_end.isoformat(timespec="milliseconds"),
+                "lastChangedType": "PAYED",
+            }
+            resp = requests.get(
+                f"{self.BASE_URL}/v1/pay-order/seller/product-orders/last-changed-statuses",
+                headers={"Authorization": f"Bearer {self.access_token}"},
+                params=params,
+                timeout=30,
+            )
+            if resp.status_code == 401:
+                self._refresh_access_token()
+                continue  # retry same window
+            resp.raise_for_status()
+            change_data = resp.json().get("data") or {}
+            for row in change_data.get("lastChangeStatuses", []):
+                pid = row.get("productOrderId")
+                if pid:
+                    all_ids.append(pid)
+            cur = chunk_end + timedelta(seconds=1)
+
+        if not all_ids:
             return []
 
-        # 상세 조회 (최대 300개씩)
-        for chunk_start in range(0, len(product_order_ids), 300):
-            chunk = product_order_ids[chunk_start : chunk_start + 300]
+        # Detail fetch (max 300 IDs per call)
+        all_orders: list[dict[str, Any]] = []
+        for chunk_start in range(0, len(all_ids), 300):
+            chunk = all_ids[chunk_start : chunk_start + 300]
             detail_resp = requests.post(
                 f"{self.BASE_URL}/v1/pay-order/seller/product-orders/query",
                 headers={

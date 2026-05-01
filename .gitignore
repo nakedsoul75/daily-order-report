@@ -28,3 +28,13 @@ env/
 # Logs
 *.log
 logs/
+
+# Tokens (Cafe24 callback page query string)
+tokens/
+*.token
+
+# Local env (also catches backup variants like ".env.bak", " - 복사본.env", "env.env")
+.env
+*.env
+env.env
+* 복사본*

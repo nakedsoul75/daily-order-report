@@ -94,17 +94,31 @@ def main() -> int:
         return 1
 
     body = resp.json()
-    print("\n=== STEP 3. 발급 결과 ===\n")
+    rtok = body.get("refresh_token", "")
+    print("\n=== STEP 3. Issued ===\n")
     print(f"  mall_id          : {body.get('mall_id')}")
     print(f"  scopes           : {body.get('scopes')}")
-    print(f"  access_token     : {body.get('access_token')[:30]}...")
-    print(f"  refresh_token    : {body.get('refresh_token')}")
+    print(f"  refresh_token    : {len(rtok)} chars (saved to .env)")
     print(f"  expires_at       : {body.get('expires_at')}")
     print(f"  refresh_expires  : {body.get('refresh_token_expires_at')}")
 
-    print("\n=== STEP 4. 다음 값을 .env / GitHub Secrets에 저장하세요 ===\n")
-    print(f"  CAFE24_REFRESH_TOKEN={body.get('refresh_token')}")
-    print()
+    # Auto-update .env file
+    env_path = ROOT / ".env"
+    if env_path.exists():
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+        updated = False
+        for i, ln in enumerate(lines):
+            if ln.strip().startswith("CAFE24_REFRESH_TOKEN="):
+                lines[i] = f"CAFE24_REFRESH_TOKEN={rtok}"
+                updated = True
+                break
+        if not updated:
+            lines.append(f"CAFE24_REFRESH_TOKEN={rtok}")
+        env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"\n[OK] .env auto-updated (CAFE24_REFRESH_TOKEN: {len(rtok)} chars)")
+    else:
+        print(f"\n[WARN] .env not found. Save manually:")
+        print(f"  CAFE24_REFRESH_TOKEN={rtok}")
     return 0
 
 
