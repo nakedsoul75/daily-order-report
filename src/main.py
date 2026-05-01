@@ -58,16 +58,19 @@ def slot_period(slot: str, now_kst: datetime) -> tuple[datetime, datetime, str]:
     return start, end, label
 
 
-def load_orders_real(start: datetime, end: datetime) -> list[dict]:
+def load_orders_real(start: datetime, end: datetime) -> tuple[list[dict], list[tuple[str, str]]]:
+    """Returns (orders, expected_subchannels) so report shows 0-count channels too."""
     cafe = cafe24_client.from_env()
     smart = smartstore_client.from_env()
 
     cafe_orders = [cafe.normalize(o) for o in cafe.fetch_orders(start, end)]
     smart_orders = [smart.normalize(o) for o in smart.fetch_orders(start, end)]
-    return cafe_orders + smart_orders
+
+    expected = [("cafe24", name) for _, name in cafe.shops] + [("smartstore", "")]
+    return cafe_orders + smart_orders, expected
 
 
-def load_orders_mock() -> list[dict]:
+def load_orders_mock() -> tuple[list[dict], list[tuple[str, str]]]:
     """Load fixture data for local development without real API keys."""
     fixtures = [
         ROOT / "tests" / "mock_cafe24.json",
@@ -78,7 +81,8 @@ def load_orders_mock() -> list[dict]:
         if f.exists():
             data = json.loads(f.read_text(encoding="utf-8"))
             orders.extend(data)
-    return orders
+    expected = [("cafe24", "기본몰"), ("smartstore", "")]
+    return orders, expected
 
 
 def main() -> int:
@@ -96,10 +100,10 @@ def main() -> int:
 
     try:
         if args.mock or os.getenv("USE_MOCK") == "1":
-            orders = load_orders_mock()
+            orders, expected = load_orders_mock()
             print(f"[MOCK] {len(orders)} orders loaded from fixtures")
         else:
-            orders = load_orders_real(start, end)
+            orders, expected = load_orders_real(start, end)
             print(f"[LIVE] {len(orders)} orders fetched ({start} ~ {end})")
     except Exception as e:
         traceback.print_exc()
@@ -113,7 +117,7 @@ def main() -> int:
                 pass
         return 1
 
-    stats = report_builder.aggregate(orders)
+    stats = report_builder.aggregate(orders, expected_subchannels=expected)
     messages = report_builder.format_report(slot_label, period_label, stats)
 
     for i, msg in enumerate(messages, 1):

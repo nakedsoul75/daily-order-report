@@ -47,12 +47,15 @@ class Cafe24Client:
         client_id: str,
         client_secret: str,
         refresh_token: str,
+        shops: list[tuple[int, str]] | None = None,
         persist_refresh: Callable[[str], None] | None = None,
     ) -> None:
         self.mall_id = mall_id
         self.client_id = client_id
         self.client_secret = client_secret
         self.refresh_token = refresh_token
+        # Each shop = (shop_no, display_name). Default: shop 1 only.
+        self.shops = shops or [(1, "기본몰")]
         self.access_token: str | None = None
         self.base_url = f"https://{mall_id}.cafe24api.com/api/v2"
         self.persist_refresh = persist_refresh or _default_persist
@@ -91,40 +94,45 @@ class Cafe24Client:
         end_dt: datetime,
         limit: int = 500,
     ) -> list[dict[str, Any]]:
-        """Fetch orders between start_dt and end_dt (KST datetimes)."""
+        """Fetch orders for ALL configured shops, tagging each with _shop_name."""
         if not self.access_token:
             self._refresh_access_token()
 
         all_orders: list[dict[str, Any]] = []
-        offset = 0
-        while True:
-            params = {
-                "start_date": start_dt.strftime("%Y-%m-%d"),
-                "end_date": end_dt.strftime("%Y-%m-%d"),
-                "date_type": "order_date",
-                "limit": limit,
-                "offset": offset,
-                "embed": "items,buyer,receivers",
-            }
-            resp = requests.get(
-                f"{self.base_url}/admin/orders",
-                headers={
-                    "Authorization": f"Bearer {self.access_token}",
-                    "X-Cafe24-Api-Version": API_VERSION,
-                    "Content-Type": "application/json",
-                },
-                params=params,
-                timeout=30,
-            )
-            if resp.status_code == 401:
-                self._refresh_access_token()
-                continue
-            resp.raise_for_status()
-            batch = resp.json().get("orders", [])
-            all_orders.extend(batch)
-            if len(batch) < limit:
-                break
-            offset += limit
+        for shop_no, shop_name in self.shops:
+            offset = 0
+            while True:
+                params = {
+                    "start_date": start_dt.strftime("%Y-%m-%d"),
+                    "end_date": end_dt.strftime("%Y-%m-%d"),
+                    "date_type": "order_date",
+                    "limit": limit,
+                    "offset": offset,
+                    "embed": "items,buyer,receivers",
+                    "shop_no": shop_no,
+                }
+                resp = requests.get(
+                    f"{self.base_url}/admin/orders",
+                    headers={
+                        "Authorization": f"Bearer {self.access_token}",
+                        "X-Cafe24-Api-Version": API_VERSION,
+                        "Content-Type": "application/json",
+                    },
+                    params=params,
+                    timeout=30,
+                )
+                if resp.status_code == 401:
+                    self._refresh_access_token()
+                    continue
+                resp.raise_for_status()
+                batch = resp.json().get("orders", [])
+                # Tag each order with its display name (shop_no already in payload)
+                for o in batch:
+                    o["_shop_name"] = shop_name
+                all_orders.extend(batch)
+                if len(batch) < limit:
+                    break
+                offset += limit
         return all_orders
 
     @staticmethod
@@ -162,6 +170,8 @@ class Cafe24Client:
 
         return {
             "channel": "cafe24",
+            "shop_no": order.get("shop_no"),
+            "shop_name": order.get("_shop_name"),
             "order_id": order.get("order_id"),
             "order_date": order.get("order_date"),
             "buyer_name": order.get("billing_name"),
@@ -180,10 +190,27 @@ class Cafe24Client:
         }
 
 
+def _parse_shops(raw: str) -> list[tuple[int, str]]:
+    """Parse 'CAFE24_SHOPS=1:한국어몰,2:사업자몰' → [(1,'한국어몰'),(2,'사업자몰')]."""
+    out: list[tuple[int, str]] = []
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        if ":" in entry:
+            no_str, name = entry.split(":", 1)
+            out.append((int(no_str.strip()), name.strip()))
+        else:
+            out.append((int(entry), f"shop{entry.strip()}"))
+    return out or [(1, "기본몰")]
+
+
 def from_env() -> Cafe24Client:
+    shops_raw = os.getenv("CAFE24_SHOPS", "1:기본몰")
     return Cafe24Client(
         mall_id=os.environ["CAFE24_MALL_ID"],
         client_id=os.environ["CAFE24_CLIENT_ID"],
         client_secret=os.environ["CAFE24_CLIENT_SECRET"],
         refresh_token=os.environ["CAFE24_REFRESH_TOKEN"],
+        shops=_parse_shops(shops_raw),
     )

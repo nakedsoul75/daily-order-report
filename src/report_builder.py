@@ -1,33 +1,57 @@
 """Aggregate normalized orders and format report text into one or more Kakao messages."""
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, OrderedDict
 from datetime import datetime
 from typing import Any
 
 # Kakao text limit is 4000 chars; leave buffer for header/index suffix
 MAX_TEXT = 3800
 
-CHANNEL_LABEL = {"cafe24": "C24", "smartstore": "SS"}
+
+def _subchannel_key(o: dict[str, Any]) -> tuple[str, str]:
+    """Return (channel, subname) tuple for grouping. e.g. ('cafe24', '한국어몰')."""
+    if o["channel"] == "cafe24":
+        return ("cafe24", o.get("shop_name") or f"shop{o.get('shop_no', '?')}")
+    return ("smartstore", "")
 
 
-def aggregate(orders: list[dict[str, Any]]) -> dict[str, Any]:
-    """Aggregate normalized orders into report-ready stats."""
-    by_channel: dict[str, dict[str, int]] = {
-        "cafe24": {"count": 0, "amount": 0, "cash": 0},
-        "smartstore": {"count": 0, "amount": 0, "cash": 0},
-    }
+def _subchannel_label(ch: str, sub: str, *, full: bool = True) -> str:
+    """Display label for header (full=True) or order line (full=False)."""
+    if ch == "cafe24":
+        if full:
+            return f"카페24 ({sub})" if sub else "카페24"
+        return f"C24/{sub[:3]}" if sub else "C24"
+    return "스마트스토어" if full else "SS"
+
+
+def aggregate(
+    orders: list[dict[str, Any]],
+    expected_subchannels: list[tuple[str, str]] | None = None,
+) -> dict[str, Any]:
+    """Aggregate normalized orders into report-ready stats.
+
+    expected_subchannels: pre-populate these (channel, name) tuples with zeros
+        so they always appear in the report even if 0 orders.
+    """
+    by_subchannel: "OrderedDict[tuple[str,str], dict[str,int]]" = OrderedDict()
+    if expected_subchannels:
+        for sk in expected_subchannels:
+            by_subchannel[sk] = {"count": 0, "amount": 0, "cash": 0}
+
     by_status: Counter[str] = Counter()
     product_qty: Counter[str] = Counter()
     cs_count = 0
     new_buyer_count = 0
 
     for o in orders:
-        ch = o["channel"]
-        if ch in by_channel:
-            by_channel[ch]["count"] += 1
-            by_channel[ch]["amount"] += int(o.get("amount") or 0)
-            by_channel[ch]["cash"] += int(o.get("cash_paid") or 0)
+        sk = _subchannel_key(o)
+        if sk not in by_subchannel:
+            by_subchannel[sk] = {"count": 0, "amount": 0, "cash": 0}
+        by_subchannel[sk]["count"] += 1
+        by_subchannel[sk]["amount"] += int(o.get("amount") or 0)
+        by_subchannel[sk]["cash"] += int(o.get("cash_paid") or 0)
+
         status = o.get("status") or "기타"
         by_status[status] += 1
         if any(k in status for k in ("취소", "환불", "반품", "CANCEL", "REFUND", "RETURN")):
@@ -39,21 +63,17 @@ def aggregate(orders: list[dict[str, Any]]) -> dict[str, Any]:
             if name:
                 product_qty[name] += int(it.get("qty") or 0)
 
-    sorted_orders = sorted(
-        orders,
-        key=lambda o: o.get("order_date") or "",
-        reverse=True,
-    )
+    sorted_orders = sorted(orders, key=lambda o: o.get("order_date") or "", reverse=True)
 
     return {
-        "by_channel": by_channel,
+        "by_subchannel": by_subchannel,
         "by_status": dict(by_status),
         "top_products": product_qty.most_common(5),
         "cs_count": cs_count,
         "new_buyer_count": new_buyer_count,
-        "total_count": sum(c["count"] for c in by_channel.values()),
-        "total_amount": sum(c["amount"] for c in by_channel.values()),
-        "total_cash": sum(c["cash"] for c in by_channel.values()),
+        "total_count": sum(c["count"] for c in by_subchannel.values()),
+        "total_amount": sum(c["amount"] for c in by_subchannel.values()),
+        "total_cash": sum(c["cash"] for c in by_subchannel.values()),
         "orders_sorted": sorted_orders,
     }
 
@@ -97,8 +117,9 @@ def _extract_time(order_date: str) -> str:
 
 
 def _format_order_line(o: dict[str, Any]) -> str:
-    """Format: [C24 #193] (홍**) 13:32 결제완료⭐ ₩25,500 — 상품×1, 상품×2"""
-    ch = CHANNEL_LABEL.get(o.get("channel"), "?")
+    """Format: [C24/한국어 #193] (홍**) 13:32 결제완료⭐신규 ₩25,500 — 상품×1"""
+    ch, sub = _subchannel_key(o)
+    ch = _subchannel_label(ch, sub, full=False)
     oid = _short_order_id(o.get("order_id") or "")
     buyer = _mask_name(o.get("buyer_name") or "")
     time_str = _extract_time(o.get("order_date") or "")
@@ -129,16 +150,27 @@ def _format_order_line(o: dict[str, Any]) -> str:
 
 
 def _build_header(slot_label: str, period_label: str, stats: dict[str, Any]) -> str:
-    cafe24 = stats["by_channel"]["cafe24"]
-    smart = stats["by_channel"]["smartstore"]
     status_line = " / ".join(f"{k} {v}" for k, v in sorted(stats["by_status"].items()))
 
-    # Show 매출 (amount) and 실결제 (cash) if they differ
+    # Cash note if different from amount
     cash_note = ""
     if stats["total_cash"] != stats["total_amount"]:
         cash_note = f"\n   (실 카드결제 합계: ₩{stats['total_cash']:,})"
 
     new_note = f" / 신규 {stats['new_buyer_count']}" if stats["new_buyer_count"] > 0 else ""
+
+    # Build per-subchannel lines
+    sub_lines = []
+    by_sub = stats["by_subchannel"]
+    if not by_sub:
+        # Show empty default rows so user knows nothing came in
+        sub_lines.append(f"   카페24       :   0건 / ₩0")
+        sub_lines.append(f"   스마트스토어 :   0건 / ₩0")
+    else:
+        for (ch, sub), v in by_sub.items():
+            label = _subchannel_label(ch, sub, full=True)
+            # Pad label to ~14 chars
+            sub_lines.append(f"   {label:<14}: {v['count']:>3}건 / ₩{v['amount']:,}")
 
     header = (
         f"📦 {slot_label} 일일 리포트\n"
@@ -146,10 +178,9 @@ def _build_header(slot_label: str, period_label: str, stats: dict[str, Any]) -> 
         f"▣ 기간: {period_label}\n"
         f"\n"
         f"▣ 채널별 (매출 기준)\n"
-        f"   카페24       : {cafe24['count']:>3}건 / ₩{cafe24['amount']:,}\n"
-        f"   스마트스토어 : {smart['count']:>3}건 / ₩{smart['amount']:,}\n"
+        + "\n".join(sub_lines) + "\n"
         f"   ─────────────────────\n"
-        f"   합계         : {stats['total_count']:>3}건 / ₩{stats['total_amount']:,}{new_note}"
+        f"   합계          : {stats['total_count']:>3}건 / ₩{stats['total_amount']:,}{new_note}"
         f"{cash_note}\n"
         f"\n"
         f"▣ 상태\n"
