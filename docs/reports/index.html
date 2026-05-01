@@ -84,13 +84,23 @@ tr:hover { background: #fafaf9; }
 .tag.new { background: #fde68a; color: #92400e; margin-left: 4px; }
 .amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 .cash { color: var(--text-muted); font-size: 11px; }
-.items-cell { color: var(--text); font-size: 12px; line-height: 1.6; }
-.items-cell .item { display: block; padding: 1px 0; }
-.items-cell .qty { color: var(--primary); font-weight: 700; }
+.items-cell { color: var(--text-muted); font-size: 12px; max-width: 320px; }
+.items-cell .opt { color: var(--blue); font-size: 11px; }
 .product-table { width: 100%; }
-.product-table td { padding: 6px 4px; }
-.product-table .pname { font-weight: 500; }
-.product-table .pqty { text-align: right; font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 700; width: 70px; }
+.product-table td { padding: 8px 4px; border-bottom: 1px dashed var(--border); }
+.product-table tr:last-child td { border-bottom: none; }
+.product-table .pname { font-weight: 500; line-height: 1.5; }
+.product-table .pname .opt-tag {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+.product-table .pqty { text-align: right; font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 700; width: 70px; font-size: 15px; }
 .highlight-products {
   background: linear-gradient(135deg, #fff7ed, #fef3c7);
   border: 2px solid var(--primary-light);
@@ -105,9 +115,9 @@ footer {
   .kpi-grid { grid-template-columns: 1fr; }
   .bar-label { width: 90px; font-size: 11px; }
   .bar-value { width: 80px; font-size: 11px; }
+  .items-cell { max-width: 160px; font-size: 11px; }
   th, td { padding: 6px 4px; font-size: 11px; }
-  /* Items column is the most important — keep visible on mobile */
-  .items-cell { font-size: 11px; }
+  th:nth-child(7), td:nth-child(7) { display: none; }
 }
 
 ul { list-style: none; padding: 0; }
