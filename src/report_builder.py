@@ -10,10 +10,10 @@ MAX_TEXT = 3800
 
 
 def _subchannel_key(o: dict[str, Any]) -> tuple[str, str]:
-    """Return (channel, subname) tuple for grouping. e.g. ('cafe24', '한국어몰')."""
+    """Return (channel, subname) tuple for grouping."""
     if o["channel"] == "cafe24":
         return ("cafe24", o.get("shop_name") or f"shop{o.get('shop_no', '?')}")
-    return ("smartstore", "")
+    return ("smartstore", o.get("shop_name") or "")
 
 
 def _subchannel_label(ch: str, sub: str, *, full: bool = True) -> str:
@@ -22,7 +22,10 @@ def _subchannel_label(ch: str, sub: str, *, full: bool = True) -> str:
         if full:
             return f"카페24 ({sub})" if sub else "카페24"
         return f"C24/{sub[:3]}" if sub else "C24"
-    return "스마트스토어" if full else "SS"
+    # smartstore
+    if full:
+        return f"스마트스토어 ({sub})" if sub else "스마트스토어"
+    return f"SS/{sub[:3]}" if sub else "SS"
 
 
 def aggregate(
@@ -140,13 +143,69 @@ def _format_order_line(o: dict[str, Any]) -> str:
         item_parts.append(f"{name}×{qty}")
     item_str = ", ".join(item_parts) or "(상품정보없음)"
 
-    # If amount differs from cash (적립금/할인 사용), show both compactly
     money_str = f"₩{amount:,}"
     if cash > 0 and cash != amount:
         money_str += f" (실결제 ₩{cash:,})"
 
     parts = [f"[{ch} #{oid}]", f"({buyer})", time_str, f"{status}{new_marker}", money_str, "—", item_str]
     return " ".join(p for p in parts if p)
+
+
+def _format_grouped_line(group: list[dict[str, Any]]) -> str:
+    """Format multiple orders by same buyer/minute as one line.
+
+    Example:
+      [SS/콤마 7건묶음] (이**) 10:44 결제완료 ₩631,000 — 행거프레임×1, r행어×1, ... +5
+    """
+    first = group[0]
+    ch, sub = _subchannel_key(first)
+    ch = _subchannel_label(ch, sub, full=False)
+    n = len(group)
+    buyer = _mask_name(first.get("buyer_name") or "")
+    time_str = _extract_time(first.get("order_date") or "")
+    status = first.get("status") or "?"
+    new_marker = "⭐신규" if any(o.get("first_order") for o in group) else ""
+    total_amount = sum(int(o.get("amount") or 0) for o in group)
+    total_cash = sum(int(o.get("cash_paid") or 0) for o in group)
+
+    # Collect items across all orders
+    all_items = []
+    for o in group:
+        for it in o.get("items", []):
+            name = (it.get("name") or "").strip()
+            qty = int(it.get("qty") or 0)
+            if name:
+                all_items.append((name, qty))
+
+    # Show first 3 items, then "+N more"
+    shown_count = 3
+    item_parts = []
+    for name, qty in all_items[:shown_count]:
+        if len(name) > 14:
+            name = name[:13] + "…"
+        item_parts.append(f"{name}×{qty}")
+    item_str = ", ".join(item_parts)
+    if len(all_items) > shown_count:
+        item_str += f" +{len(all_items) - shown_count}"
+
+    money_str = f"₩{total_amount:,}"
+    if total_cash > 0 and total_cash != total_amount:
+        money_str += f" (실결제 ₩{total_cash:,})"
+
+    parts = [f"[{ch} {n}건묶음]", f"({buyer})", time_str, f"{status}{new_marker}", money_str, "—", item_str]
+    return " ".join(p for p in parts if p)
+
+
+def _group_orders(orders: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Group orders by (channel, shop, buyer, time-minute). 1-order groups stay solo."""
+    grouped: "OrderedDict[tuple, list[dict[str, Any]]]" = OrderedDict()
+    for o in orders:
+        ch, sub = _subchannel_key(o)
+        buyer = (o.get("buyer_name") or "").strip()
+        time_str = _extract_time(o.get("order_date") or "")
+        key = (ch, sub, buyer, time_str)
+        grouped.setdefault(key, []).append(o)
+    return list(grouped.values())
 
 
 def _build_header(slot_label: str, period_label: str, stats: dict[str, Any]) -> str:
@@ -216,8 +275,14 @@ def format_report(
     if not orders:
         return [header]
 
-    # Build all order lines first
-    order_lines = ["   " + _format_order_line(o) for o in orders]
+    # Group same-buyer/minute orders, then format
+    groups = _group_orders(orders)
+    order_lines: list[str] = []
+    for g in groups:
+        if len(g) == 1:
+            order_lines.append("   " + _format_order_line(g[0]))
+        else:
+            order_lines.append("   " + _format_grouped_line(g))
     total = len(orders)
 
     # Pack into messages: first message has header + as many lines as fit, rest pack lines only

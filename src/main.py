@@ -66,7 +66,7 @@ def load_orders_real(start: datetime, end: datetime) -> tuple[list[dict], list[t
     cafe_orders = [cafe.normalize(o) for o in cafe.fetch_orders(start, end)]
     smart_orders = [smart.normalize(o) for o in smart.fetch_orders(start, end)]
 
-    expected = [("cafe24", name) for _, name in cafe.shops] + [("smartstore", "")]
+    expected = [("cafe24", name) for _, name in cafe.shops] + [("smartstore", smart.shop_name)]
     return cafe_orders + smart_orders, expected
 
 

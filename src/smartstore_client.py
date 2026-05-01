@@ -10,13 +10,32 @@ from typing import Any
 import bcrypt
 import requests
 
+# Naver Commerce productOrderStatus → Korean label
+STATUS_KR = {
+    "PAYMENT_WAITING": "결제대기",
+    "PAYED": "결제완료",
+    "DELIVERING": "배송중",
+    "DELIVERED": "배송완료",
+    "PURCHASE_DECIDED": "구매확정",
+    "EXCHANGED": "교환",
+    "CANCELED": "취소",
+    "RETURNED": "반품완료",
+    "CANCELED_BY_NOPAYMENT": "미결제취소",
+}
+
 
 class SmartStoreClient:
     BASE_URL = "https://api.commerce.naver.com/external"
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(
+        self,
+        client_id: str,
+        client_secret: str,
+        shop_name: str = "",
+    ) -> None:
         self.client_id = client_id
         self.client_secret = client_secret
+        self.shop_name = shop_name
         self.access_token: str | None = None
         self.token_expires_at: float = 0.0
 
@@ -110,21 +129,22 @@ class SmartStoreClient:
             all_orders.extend(detail_resp.json().get("data", []))
         return all_orders
 
-    @staticmethod
-    def normalize(order: dict[str, Any]) -> dict[str, Any]:
+    def normalize(self, order: dict[str, Any]) -> dict[str, Any]:
         """Convert Naver order to common schema."""
         product_order = order.get("productOrder", {}) or {}
         order_main = order.get("order", {}) or {}
         amount = int(product_order.get("totalPaymentAmount") or 0)
+        raw_status = product_order.get("productOrderStatus") or ""
         return {
             "channel": "smartstore",
+            "shop_name": self.shop_name,
             "order_id": product_order.get("productOrderId"),
             "order_date": order_main.get("orderDate"),
             "buyer_name": order_main.get("ordererName"),
             "amount": amount,
             "cash_paid": amount,
             "first_order": False,  # SmartStore doesn't expose this in basic order data
-            "status": product_order.get("productOrderStatus"),
+            "status": STATUS_KR.get(raw_status, raw_status or "기타"),
             "items": [
                 {
                     "name": product_order.get("productName"),
@@ -139,4 +159,5 @@ def from_env() -> SmartStoreClient:
     return SmartStoreClient(
         client_id=os.environ["NAVER_COMMERCE_CLIENT_ID"],
         client_secret=os.environ["NAVER_COMMERCE_CLIENT_SECRET"],
+        shop_name=os.getenv("NAVER_COMMERCE_STORE_NAME", ""),
     )
