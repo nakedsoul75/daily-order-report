@@ -150,14 +150,24 @@ class Cafe24Client:
 
     @classmethod
     def normalize(cls, order: dict[str, Any]) -> dict[str, Any]:
-        """Convert Cafe24 v2026-03-01 order to common schema."""
+        """Convert Cafe24 v2026-03-01 order to common schema.
+
+        Amount = order_price_amount (실 매출, 적립금/할인 차감 전)
+        Cash = payment_amount (실 카드 결제, 적립금 차감 후)
+        """
         items = order.get("items", []) or []
+        actual = order.get("actual_order_amount") or {}
+        order_value = actual.get("order_price_amount") or order.get("payment_amount") or 0
+        cash_paid = order.get("payment_amount") or 0
+
         return {
             "channel": "cafe24",
             "order_id": order.get("order_id"),
             "order_date": order.get("order_date"),
             "buyer_name": order.get("billing_name"),
-            "amount": int(float(order.get("payment_amount") or 0)),
+            "amount": int(float(order_value)),
+            "cash_paid": int(float(cash_paid)),
+            "first_order": order.get("first_order") == "T",
             "status": cls._derive_status(order),
             "items": [
                 {

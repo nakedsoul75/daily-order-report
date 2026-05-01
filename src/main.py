@@ -114,19 +114,24 @@ def main() -> int:
         return 1
 
     stats = report_builder.aggregate(orders)
-    text = report_builder.format_report(slot_label, period_label, stats)
+    messages = report_builder.format_report(slot_label, period_label, stats)
 
-    print("\n" + "=" * 50)
-    print(text)
+    for i, msg in enumerate(messages, 1):
+        print(f"\n{'=' * 50}\n[Message {i}/{len(messages)}] ({len(msg)} chars)\n{'=' * 50}")
+        print(msg)
     print("=" * 50 + "\n")
 
     if args.no_send or os.getenv("DRY_RUN") == "true":
-        print("[DRY RUN] Skipping Kakao send.")
+        print(f"[DRY RUN] Skipping Kakao send ({len(messages)} message(s) would be sent).")
         return 0
 
     kc = kakao_client.from_env()
-    result = kc.send_text(text)
-    print(f"[SEND] Kakao response: {result}")
+    import time as _t
+    for i, msg in enumerate(messages, 1):
+        result = kc.send_text(msg)
+        print(f"[SEND {i}/{len(messages)}] Kakao response: {result}")
+        if i < len(messages):
+            _t.sleep(1)  # avoid rate-limit on consecutive sends
     return 0
 
 

@@ -115,12 +115,15 @@ class SmartStoreClient:
         """Convert Naver order to common schema."""
         product_order = order.get("productOrder", {}) or {}
         order_main = order.get("order", {}) or {}
+        amount = int(product_order.get("totalPaymentAmount") or 0)
         return {
             "channel": "smartstore",
             "order_id": product_order.get("productOrderId"),
             "order_date": order_main.get("orderDate"),
             "buyer_name": order_main.get("ordererName"),
-            "amount": int(product_order.get("totalPaymentAmount") or 0),
+            "amount": amount,
+            "cash_paid": amount,
+            "first_order": False,  # SmartStore doesn't expose this in basic order data
             "status": product_order.get("productOrderStatus"),
             "items": [
                 {
