@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Callback — Daily Order Report</title>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; color: #333; line-height: 1.6; }
+    h1 { color: #1a1a1a; }
+    .box { background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin: 12px 0; word-break: break-all; font-family: "Consolas", "Monaco", monospace; font-size: 13px; }
+    .ok { background: #e8f5e9; border-color: #4caf50; }
+    .err { background: #ffebee; border-color: #f44336; }
+    button { background: #1976d2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #1565c0; }
+    .step { background: #fff8e1; border-left: 3px solid #ffa000; padding: 12px 16px; margin: 16px 0; font-size: 14px; }
+    pre { background: #263238; color: #aed581; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>OAuth Callback</h1>
+  <p>카페24 인증 응답을 표시합니다. 아래 <strong>Authorization Code</strong>를 복사해 토큰 교환 단계로 진행하세요.</p>
+
+  <div id="result" class="box">파싱 중...</div>
+  <button onclick="copyCode()">📋 Code 복사</button>
+
+  <div class="step">
+    <strong>다음 단계 — 터미널에서 토큰 교환</strong>
+    <pre id="curlCmd">URL 파싱 후 표시됩니다.</pre>
+  </div>
+
+  <details>
+    <summary style="cursor: pointer; font-weight: bold;">전체 Query String / State 보기</summary>
+    <div id="raw" class="box"></div>
+  </details>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+    const result = document.getElementById("result");
+    const raw = document.getElementById("raw");
+    const curl = document.getElementById("curlCmd");
+
+    raw.textContent = window.location.search || "(empty)";
+
+    if (error) {
+      result.className = "box err";
+      result.innerHTML = "<strong>❌ Error:</strong> " + error +
+        "<br>" + (params.get("error_description") || "");
+    } else if (code) {
+      result.className = "box ok";
+      result.innerHTML = "<strong>✅ Code:</strong><br>" + code;
+
+      const mallId = prompt("쇼핑몰 ID(mall_id)를 입력하세요 (예: myshop):", "your_mall_id") || "{MALL_ID}";
+      const clientId = "{CLIENT_ID}";
+      const clientSecret = "{CLIENT_SECRET}";
+      const redirectUri = window.location.origin + window.location.pathname;
+
+      curl.textContent =
+        `curl -X POST "https://${mallId}.cafe24api.com/api/v2/oauth/token" \\\n` +
+        `  -H "Content-Type: application/x-www-form-urlencoded" \\\n` +
+        `  -u "${clientId}:${clientSecret}" \\\n` +
+        `  -d "grant_type=authorization_code" \\\n` +
+        `  -d "code=${code}" \\\n` +
+        `  -d "redirect_uri=${redirectUri}"`;
+    } else {
+      result.innerHTML = "code 파라미터가 없습니다. 인증 URL부터 다시 시작하세요.";
+    }
+
+    function copyCode() {
+      if (code) {
+        navigator.clipboard.writeText(code).then(() => alert("Code 복사됨"));
+      }
+    }
+  </script>
+</body>
+</html>

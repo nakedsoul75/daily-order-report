@@ -1,0 +1,36 @@
+[
+  {
+    "channel": "cafe24",
+    "order_id": "20260501-0000123",
+    "order_date": "2026-05-01T10:23:00+09:00",
+    "buyer_name": "김철수",
+    "amount": 45000,
+    "status": "결제완료",
+    "items": [
+      {"name": "프리미엄 캠핑 테이블", "qty": 1, "price": 45000}
+    ]
+  },
+  {
+    "channel": "cafe24",
+    "order_id": "20260501-0000124",
+    "order_date": "2026-05-01T11:05:00+09:00",
+    "buyer_name": "이영희",
+    "amount": 89000,
+    "status": "발송준비",
+    "items": [
+      {"name": "알루미늄 폴딩 의자", "qty": 2, "price": 39000},
+      {"name": "원목 도마", "qty": 1, "price": 11000}
+    ]
+  },
+  {
+    "channel": "cafe24",
+    "order_id": "20260501-0000125",
+    "order_date": "2026-05-01T13:42:00+09:00",
+    "buyer_name": "박민수",
+    "amount": 0,
+    "status": "취소",
+    "items": [
+      {"name": "프리미엄 캠핑 테이블", "qty": 1, "price": 45000}
+    ]
+  }
+]

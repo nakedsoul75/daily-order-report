@@ -1,0 +1,25 @@
+[
+  {
+    "channel": "smartstore",
+    "order_id": "2026050100012345",
+    "order_date": "2026-05-01T09:15:00+09:00",
+    "buyer_name": "정수진",
+    "amount": 32000,
+    "status": "PAYED",
+    "items": [
+      {"name": "원목 도마", "qty": 1, "price": 11000},
+      {"name": "황동 손잡이", "qty": 1, "price": 21000}
+    ]
+  },
+  {
+    "channel": "smartstore",
+    "order_id": "2026050100012346",
+    "order_date": "2026-05-01T14:30:00+09:00",
+    "buyer_name": "최동훈",
+    "amount": 78000,
+    "status": "DISPATCHED",
+    "items": [
+      {"name": "알루미늄 폴딩 의자", "qty": 2, "price": 39000}
+    ]
+  }
+]
