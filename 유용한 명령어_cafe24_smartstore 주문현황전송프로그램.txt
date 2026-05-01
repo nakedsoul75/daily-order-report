@@ -1,0 +1,14 @@
+# 작업 상태 확인
+Get-ScheduledTask -TaskName "DailyOrderReport-*" | Select TaskName, State, LastRunTime
+
+# 즉시 한 번 실행해보기
+Start-ScheduledTask -TaskName "DailyOrderReport-Morning"
+
+# 로그 보기
+Get-Content "C:\Users\naked\Documents\agent\daily-order-report\logs\morning.log" -Tail 50 -Encoding UTF8
+
+# 작업 모두 제거
+powershell -ExecutionPolicy Bypass -File scripts\unregister_scheduler.ps1
+
+# 다시 등록
+powershell -ExecutionPolicy Bypass -File scripts\register_scheduler.ps1
