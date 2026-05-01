@@ -27,10 +27,10 @@ daily-order-report/
 ├── tests/
 │   ├── mock_cafe24.json
 │   └── mock_smartstore.json
-├── docs/
-│   ├── site/
-│   │   ├── index.html                   # GitHub Pages App URL
-│   │   └── callback.html                # OAuth Redirect URI
+├── docs/                                # GitHub Pages source folder
+│   ├── index.html                       # App URL (Pages 홈)
+│   ├── callback.html                    # OAuth Redirect URI
+│   ├── .nojekyll                        # Jekyll 처리 비활성화
 │   ├── setup-cafe24.md
 │   ├── setup-smartstore.md
 │   ├── setup-kakao.md

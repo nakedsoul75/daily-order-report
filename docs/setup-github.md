@@ -47,7 +47,7 @@ git push -u origin main
 
 1. 레포 페이지 → **Settings → Pages**
 2. **Source**: `Deploy from a branch`
-3. **Branch**: `main` / Folder: `/docs/site`
+3. **Branch**: `main` / Folder: `/docs`
 4. **Save**
 5. 1~2분 대기 후 URL 확인:
    ```
