@@ -84,7 +84,17 @@ tr:hover { background: #fafaf9; }
 .tag.new { background: #fde68a; color: #92400e; margin-left: 4px; }
 .amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 .cash { color: var(--text-muted); font-size: 11px; }
-.items-cell { color: var(--text-muted); font-size: 12px; max-width: 320px; }
+.items-cell { color: var(--text); font-size: 12px; line-height: 1.6; }
+.items-cell .item { display: block; padding: 1px 0; }
+.items-cell .qty { color: var(--primary); font-weight: 700; }
+.product-table { width: 100%; }
+.product-table td { padding: 6px 4px; }
+.product-table .pname { font-weight: 500; }
+.product-table .pqty { text-align: right; font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 700; width: 70px; }
+.highlight-products {
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 2px solid var(--primary-light);
+}
 footer {
   text-align: center;
   font-size: 11px;
@@ -95,9 +105,9 @@ footer {
   .kpi-grid { grid-template-columns: 1fr; }
   .bar-label { width: 90px; font-size: 11px; }
   .bar-value { width: 80px; font-size: 11px; }
-  .items-cell { max-width: 160px; }
   th, td { padding: 6px 4px; font-size: 11px; }
-  th:nth-child(7), td:nth-child(7) { display: none; }
+  /* Items column is the most important — keep visible on mobile */
+  .items-cell { font-size: 11px; }
 }
 
 ul { list-style: none; padding: 0; }
