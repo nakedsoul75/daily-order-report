@@ -20,6 +20,7 @@ if (-not (Test-Path $LogDir)) {
 
 $Slots = @(
     @{Name = "DailyOrderReport-Morning";  Slot = "morning"; Time = "08:30"; Desc = "08:30 KST - Yesterday summary"},
+    @{Name = "DailyOrderReport-Alert";    Slot = "alert";   Time = "09:00"; Desc = "09:00 KST - Delay + low stock alerts"},
     @{Name = "DailyOrderReport-Midday";   Slot = "midday";  Time = "12:30"; Desc = "12:30 KST - Morning cumulative"},
     @{Name = "DailyOrderReport-Evening";  Slot = "evening"; Time = "18:00"; Desc = "18:00 KST - Daily close"}
 )

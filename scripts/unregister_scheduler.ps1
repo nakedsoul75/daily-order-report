@@ -3,7 +3,7 @@
 # 실행:
 #   powershell -ExecutionPolicy Bypass -File scripts\unregister_scheduler.ps1
 
-$Tasks = @("DailyOrderReport-Morning", "DailyOrderReport-Midday", "DailyOrderReport-Evening")
+$Tasks = @("DailyOrderReport-Morning", "DailyOrderReport-Alert", "DailyOrderReport-Midday", "DailyOrderReport-Evening")
 
 foreach ($t in $Tasks) {
     $existing = Get-ScheduledTask -TaskName $t -ErrorAction SilentlyContinue

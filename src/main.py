@@ -37,6 +37,7 @@ SLOTS = {
     "midday": "12:30 (오전 누적)",
     "evening": "18:00 (일일 마감)",
     "test": "TEST",
+    "alert": "09:00 (지연/재고 알림)",
 }
 
 
@@ -101,6 +102,22 @@ def main() -> int:
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
+
+    # ===== Alert mode (지연 + 재고 부족) =====
+    if args.slot == "alert":
+        from src import alerts
+        if args.no_send or os.getenv("DRY_RUN") == "true":
+            delays = alerts.detect_delays()
+            low = alerts.detect_low_stock(threshold=5)
+            print(f"[DRY] delays={len(delays)}, low_stock={len(low)}")
+            if delays:
+                print("\n=== 지연 메시지 ===\n" + alerts.format_delay_message(delays))
+            if low:
+                print("\n=== 재고 부족 메시지 ===\n" + alerts.format_low_stock_message(low))
+            return 0
+        result = alerts.run_morning_alerts(kakao_client.from_env)
+        print(f"[ALERT] {result}")
+        return 0
 
     now_kst = datetime.now(KST)
     start, end, period_label = slot_period(args.slot, now_kst)
