@@ -67,19 +67,31 @@ def slot_period(slot: str, now_kst: datetime) -> tuple[datetime, datetime, str]:
     return start, end, label
 
 
-def load_orders_real(start: datetime, end: datetime) -> tuple[list[dict], list[tuple[str, str]]]:
-    """Returns (orders, expected_subchannels) so report shows 0-count channels too."""
+def load_orders_real(start: datetime, end: datetime) -> tuple[list[dict], list[tuple[str, str]], list[str]]:
+    """Returns (orders, expected_subchannels, errors)."""
     cafe = cafe24_client.from_env()
     smart = smartstore_client.from_env()
+    errors: list[str] = []
 
-    cafe_orders = [cafe.normalize(o) for o in cafe.fetch_orders(start, end)]
-    smart_orders = [smart.normalize(o) for o in smart.fetch_orders(start, end)]
+    cafe_orders: list[dict] = []
+    try:
+        cafe_orders = [cafe.normalize(o) for o in cafe.fetch_orders(start, end)]
+    except Exception as e:
+        errors.append(f"카페24: {type(e).__name__}: {str(e)[:200]}")
+        print(f"[ERR cafe24] {e}")
+
+    smart_orders: list[dict] = []
+    try:
+        smart_orders = [smart.normalize(o) for o in smart.fetch_orders(start, end)]
+    except Exception as e:
+        errors.append(f"스마트스토어: {type(e).__name__}: {str(e)[:200]}")
+        print(f"[ERR smartstore] {e}")
 
     expected = [("cafe24", name) for _, name in cafe.shops] + [("smartstore", smart.shop_name)]
-    return cafe_orders + smart_orders, expected
+    return cafe_orders + smart_orders, expected, errors
 
 
-def load_orders_mock() -> tuple[list[dict], list[tuple[str, str]]]:
+def load_orders_mock() -> tuple[list[dict], list[tuple[str, str]], list[str]]:
     """Load fixture data for local development without real API keys."""
     fixtures = [
         ROOT / "tests" / "mock_cafe24.json",
@@ -91,7 +103,7 @@ def load_orders_mock() -> tuple[list[dict], list[tuple[str, str]]]:
             data = json.loads(f.read_text(encoding="utf-8"))
             orders.extend(data)
     expected = [("cafe24", "기본몰"), ("smartstore", "")]
-    return orders, expected
+    return orders, expected, []
 
 
 def main() -> int:
@@ -123,20 +135,23 @@ def main() -> int:
     start, end, period_label = slot_period(args.slot, now_kst)
     slot_label = f"{now_kst:%Y-%m-%d} {SLOTS[args.slot]}"
 
+    fetch_errors: list[str] = []
     try:
         if args.mock or os.getenv("USE_MOCK") == "1":
-            orders, expected = load_orders_mock()
+            orders, expected, fetch_errors = load_orders_mock()
             print(f"[MOCK] {len(orders)} orders loaded from fixtures")
         else:
-            orders, expected = load_orders_real(start, end)
-            print(f"[LIVE] {len(orders)} orders fetched ({start} ~ {end})")
+            orders, expected, fetch_errors = load_orders_real(start, end)
+            print(f"[LIVE] {len(orders)} orders fetched (errors={len(fetch_errors)})")
+            for e in fetch_errors:
+                print(f"  [WARN] {e}")
     except Exception as e:
+        # Catastrophic failure (e.g., env missing)
         traceback.print_exc()
-        # Send error notification to Kakao instead of silently failing
         if not args.no_send and os.getenv("KAKAO_REFRESH_TOKEN"):
             try:
                 kakao_client.from_env().send_text(
-                    f"⚠️ 주문 리포트 실패\nslot={args.slot}\n{type(e).__name__}: {e}"
+                    f"⚠️ 주문 리포트 치명적 오류\nslot={args.slot}\n{type(e).__name__}: {e}"
                 )
             except Exception:
                 pass
@@ -178,8 +193,14 @@ def main() -> int:
     if not args.no_send and not os.getenv("SKIP_GIT_PUSH"):
         _git_publish(report_path, slot_label)
 
-    # 5. Build short Kakao message with URL
+    # 5. Build short Kakao message with URL (+ error footer if any channel failed)
     short_msg = report_builder.format_short_kakao(slot_label, period_label, stats, report_url)
+    if fetch_errors:
+        short_msg += "\n\n⚠️ 일부 채널 호출 실패:"
+        for e in fetch_errors[:2]:
+            # Show only channel name + status code, not full body
+            short_e = e.split(":")[0] + " — " + (e.split("status=")[1].split(",")[0] if "status=" in e else "오류")
+            short_msg += f"\n  {short_e}"
     print(f"\n{'=' * 50}\n[Kakao Message] ({len(short_msg)} chars)\n{'=' * 50}")
     print(short_msg)
     print("=" * 50 + "\n")
