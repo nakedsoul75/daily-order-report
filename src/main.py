@@ -24,6 +24,12 @@ sys.path.insert(0, str(ROOT))
 
 from src import cafe24_client, kakao_client, report_builder, smartstore_client  # noqa: E402
 
+try:
+    from src import supabase_sync  # noqa: E402
+    HAS_SUPABASE = True
+except ImportError:
+    HAS_SUPABASE = False
+
 KST = pytz.timezone("Asia/Seoul")
 
 SLOTS = {
@@ -118,6 +124,16 @@ def main() -> int:
             except Exception:
                 pass
         return 1
+
+    # Sync orders to Supabase (silent if not configured)
+    if HAS_SUPABASE and orders and not args.mock:
+        try:
+            sync_result = supabase_sync.sync_orders(orders)
+            if not sync_result.get("skipped"):
+                print(f"[SUPABASE] {sync_result.get('inserted', 0)} rows upserted "
+                      f"(mapped={sync_result.get('mapped', 0)}, unmapped={sync_result.get('unmapped', 0)})")
+        except Exception as e:
+            print(f"[SUPABASE] sync error (continuing without sync): {e}")
 
     stats = report_builder.aggregate(orders, expected_subchannels=expected)
 

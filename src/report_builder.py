@@ -24,15 +24,34 @@ def _subchannel_key(o: dict[str, Any]) -> tuple[str, str]:
 
 
 def _subchannel_label(ch: str, sub: str, *, full: bool = True) -> str:
-    """Display label for header (full=True) or order line (full=False)."""
+    """Business-friendly display labels.
+
+    User's preferred labels:
+      cafe24 / 한국어몰 → 자사몰
+      cafe24 / 사업자몰 → 제휴사
+      smartstore / *   → 스토어
+    Other shops fall back to the underlying name.
+    """
     if ch == "cafe24":
+        if sub == "한국어몰":
+            return "자사몰"
+        if sub == "사업자몰":
+            return "제휴사"
+        # Fallback for other cafe24 shops
         if full:
             return f"카페24 ({sub})" if sub else "카페24"
         return f"C24/{sub[:3]}" if sub else "C24"
     # smartstore
-    if full:
-        return f"스마트스토어 ({sub})" if sub else "스마트스토어"
-    return f"SS/{sub[:3]}" if sub else "SS"
+    return "스토어"
+
+
+def _product_key(item: dict[str, Any]) -> str:
+    """Build product key including option (so 색상별로 카운트). e.g. '바이런 쉘프 (색상=스텐)'."""
+    name = (item.get("name") or "").strip()
+    opt = (item.get("option") or "").strip()
+    if opt:
+        return f"{name} ({opt})"
+    return name
 
 
 def aggregate(
@@ -69,9 +88,9 @@ def aggregate(
         if o.get("first_order"):
             new_buyer_count += 1
         for it in o.get("items", []):
-            name = (it.get("name") or "").strip()[:30]
-            if name:
-                product_qty[name] += int(it.get("qty") or 0)
+            key = _product_key(it)
+            if key:
+                product_qty[key] += int(it.get("qty") or 0)
 
     sorted_orders = sorted(orders, key=lambda o: o.get("order_date") or "", reverse=True)
 
@@ -79,6 +98,7 @@ def aggregate(
         "by_subchannel": by_subchannel,
         "by_status": dict(by_status),
         "top_products": product_qty.most_common(5),
+        "all_products": product_qty.most_common(),  # full list for HTML report
         "cs_count": cs_count,
         "new_buyer_count": new_buyer_count,
         "total_count": sum(c["count"] for c in by_subchannel.values()),
@@ -447,6 +467,26 @@ tr:hover { background: #fafaf9; }
 .amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 .cash { color: var(--text-muted); font-size: 11px; }
 .items-cell { color: var(--text-muted); font-size: 12px; max-width: 320px; }
+.items-cell .opt { color: var(--blue); font-size: 11px; }
+.product-table { width: 100%; }
+.product-table td { padding: 8px 4px; border-bottom: 1px dashed var(--border); }
+.product-table tr:last-child td { border-bottom: none; }
+.product-table .pname { font-weight: 500; line-height: 1.5; }
+.product-table .pname .opt-tag {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+.product-table .pqty { text-align: right; font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 700; width: 70px; font-size: 15px; }
+.highlight-products {
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 2px solid var(--primary-light);
+}
 footer {
   text-align: center;
   font-size: 11px;
@@ -457,7 +497,7 @@ footer {
   .kpi-grid { grid-template-columns: 1fr; }
   .bar-label { width: 90px; font-size: 11px; }
   .bar-value { width: 80px; font-size: 11px; }
-  .items-cell { max-width: 160px; }
+  .items-cell { max-width: 160px; font-size: 11px; }
   th, td { padding: 6px 4px; font-size: 11px; }
   th:nth-child(7), td:nth-child(7) { display: none; }
 }
@@ -499,15 +539,26 @@ def format_html_report(
         for k, v in sorted(stats["by_status"].items())
     ) or '<span class="tag c24">(없음)</span>'
 
-    # Top products
-    top_rows = []
-    for i, (name, qty) in enumerate(stats["top_products"], 1):
-        top_rows.append(
-            f'<tr><td style="width:40px">{i}</td><td>{_esc(name)}</td>'
-            f'<td class="amount">{qty}건</td></tr>'
+    # All products (for production prep) — sorted by quantity desc
+    # Product key includes option, so split for visual highlighting
+    all_products = stats.get("all_products", []) or stats.get("top_products", [])
+    total_qty = sum(q for _, q in all_products)
+    product_rows = []
+    for i, (full_key, qty) in enumerate(all_products, 1):
+        # Parse "상품명 (옵션값)" pattern
+        if " (" in full_key and full_key.endswith(")"):
+            name_part, opt_part = full_key.rsplit(" (", 1)
+            opt_part = opt_part.rstrip(")")
+            name_html = f'{_esc(name_part)} <span class="opt-tag">{_esc(opt_part)}</span>'
+        else:
+            name_html = _esc(full_key)
+        product_rows.append(
+            f'<tr><td style="width:30px;color:var(--text-muted);text-align:right">{i}</td>'
+            f'<td class="pname">{name_html}</td>'
+            f'<td class="pqty">{qty}개</td></tr>'
         )
-    if not top_rows:
-        top_rows = ['<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">(데이터 없음)</td></tr>']
+    if not product_rows:
+        product_rows = ['<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">(판매 상품 없음)</td></tr>']
 
     # Order rows (full list, no truncation here)
     order_rows = []
@@ -529,23 +580,30 @@ def format_html_report(
             total_amount = sum(int(o.get("amount") or 0) for o in g)
             total_cash = sum(int(o.get("cash_paid") or 0) for o in g)
             oid = f"{len(g)}건묶음"
-            all_items = []
+            all_items_data: list[tuple[str, str, int]] = []
             for o in g:
                 for it in o.get("items", []):
                     nm = (it.get("name") or "").strip()
+                    opt = (it.get("option") or "").strip()
                     qty = int(it.get("qty") or 0)
                     if nm:
-                        all_items.append(f"{nm}×{qty}")
-            items_str = ", ".join(all_items)
+                        all_items_data.append((nm, opt, qty))
         else:
             o = first
             total_amount = int(o.get("amount") or 0)
             total_cash = int(o.get("cash_paid") or 0)
             oid = "#" + _short_order_id(o.get("order_id") or "")
-            items_str = ", ".join(
-                f"{(it.get('name') or '').strip()}×{int(it.get('qty') or 0)}"
+            all_items_data = [
+                ((it.get("name") or "").strip(), (it.get("option") or "").strip(), int(it.get("qty") or 0))
                 for it in o.get("items", []) if (it.get("name") or "").strip()
-            )
+            ]
+
+        # Single-line comma-separated items, with option in blue parentheses
+        item_parts = []
+        for nm, opt, qty in all_items_data:
+            opt_html = f' <span class="opt">({_esc(opt)})</span>' if opt else ""
+            item_parts.append(f"{_esc(nm)}{opt_html}×{qty}")
+        items_html = ", ".join(item_parts) or '<span style="color:var(--text-muted)">(상품 정보 없음)</span>'
 
         cash_note = ""
         if total_cash > 0 and total_cash != total_amount:
@@ -559,7 +617,7 @@ def format_html_report(
             f'<td>{_esc(buyer)}{new_chip}</td>'
             f'<td>{_esc(status)}</td>'
             f'<td class="amount">₩{total_amount:,}{cash_note}</td>'
-            f'<td class="items-cell">{_esc(items_str)}</td>'
+            f'<td class="items-cell">{items_html}</td>'
             f'</tr>'
         )
     if not order_rows:
@@ -609,9 +667,9 @@ def format_html_report(
     </div>
   </div>
 
-  <div class="card">
-    <h2>🏆 상품 TOP 5</h2>
-    <table>{''.join(top_rows)}</table>
+  <div class="card highlight-products">
+    <h2>📦 판매 상품 전체 ({len(all_products)}종 / 총 {total_qty}개) — 제품 준비용</h2>
+    <table class="product-table">{''.join(product_rows)}</table>
   </div>
 
   <div class="card">

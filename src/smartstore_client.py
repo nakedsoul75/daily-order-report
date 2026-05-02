@@ -148,6 +148,8 @@ class SmartStoreClient:
             "items": [
                 {
                     "name": product_order.get("productName"),
+                    "option": (product_order.get("productOption") or "").strip(),
+                    "sku_code": str(product_order.get("originalProductId") or product_order.get("productId") or ""),
                     "qty": int(product_order.get("quantity") or 0),
                     "price": int(product_order.get("unitPrice") or 0),
                 }

@@ -182,6 +182,8 @@ class Cafe24Client:
             "items": [
                 {
                     "name": it.get("product_name") or it.get("product_name_default"),
+                    "option": (it.get("option_value") or "").strip(),
+                    "sku_code": it.get("custom_product_code") or it.get("product_code"),
                     "qty": int(it.get("quantity") or 0),
                     "price": int(float(it.get("product_price") or 0)),
                 }
