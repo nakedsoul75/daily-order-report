@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>2026-05-03 08:30 (어제 마감 요약) 일일 리포트</title>
+<style>
+:root {
+  --primary: #ea580c;
+  --primary-light: #fed7aa;
+  --bg: #fafaf9;
+  --card: #ffffff;
+  --border: #e7e5e4;
+  --text: #1c1917;
+  --text-muted: #78716c;
+  --green: #16a34a;
+  --blue: #2563eb;
+  --red: #dc2626;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; }
+header {
+  background: linear-gradient(135deg, var(--primary), #f97316);
+  color: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+header h1 { font-size: 22px; margin-bottom: 4px; }
+header .meta { font-size: 13px; opacity: 0.9; }
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+}
+.kpi .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.kpi .value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.card h2 { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; }
+.bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.bar-label { width: 140px; flex-shrink: 0; color: var(--text-muted); }
+.bar-bg { flex: 1; height: 22px; background: #f5f5f4; border-radius: 4px; position: relative; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s; }
+.bar-fill.alt { background: var(--blue); }
+.bar-value { width: 110px; flex-shrink: 0; text-align: right; font-size: 12px; font-weight: 500; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; background: #fafaf9; position: sticky; top: 0; }
+tr.new { background: linear-gradient(90deg, #fef3c7 0%, transparent 30%); }
+tr:hover { background: #fafaf9; }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag.c24 { background: #dbeafe; color: #1e40af; }
+.tag.ss { background: #dcfce7; color: #166534; }
+.tag.new { background: #fde68a; color: #92400e; margin-left: 4px; }
+.amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.cash { color: var(--text-muted); font-size: 11px; }
+.items-cell { color: var(--text-muted); font-size: 12px; max-width: 320px; }
+.items-cell .opt { color: var(--blue); font-size: 11px; }
+.product-table { width: 100%; }
+.product-table td { padding: 8px 4px; border-bottom: 1px dashed var(--border); }
+.product-table tr:last-child td { border-bottom: none; }
+.product-table .pname { font-weight: 500; line-height: 1.5; }
+.product-table .pname .opt-tag {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+.product-table .pqty { text-align: right; font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 700; width: 70px; font-size: 15px; }
+.highlight-products {
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 2px solid var(--primary-light);
+}
+footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 24px 0 16px;
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .bar-label { width: 90px; font-size: 11px; }
+  .bar-value { width: 80px; font-size: 11px; }
+  .items-cell { max-width: 160px; font-size: 11px; }
+  th, td { padding: 6px 4px; font-size: 11px; }
+  th:nth-child(7), td:nth-child(7) { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📦 2026-05-03 08:30 (어제 마감 요약) 일일 리포트</h1>
+    <div class="meta">📅 2026-05-02 00:00 ~ 23:59 (전일)</div>
+  </header>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="label">총 매출</div>
+      <div class="value">₩1,315,500</div>
+      <div class="sub">실 카드결제 ₩1,104,250</div>
+    </div>
+    <div class="kpi">
+      <div class="label">총 주문</div>
+      <div class="value">6건</div>
+      <div class="sub">신규 5명</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 채널별 매출</h2>
+    <div class="bar-row">  <div class="bar-label">자사몰</div>  <div class="bar-bg"><div class="bar-fill" style="width:100.0%"></div></div>  <div class="bar-value">5건 / ₩1,249,500</div></div><div class="bar-row">  <div class="bar-label">제휴사</div>  <div class="bar-bg"><div class="bar-fill" style="width:0.0%"></div></div>  <div class="bar-value">0건 / ₩0</div></div><div class="bar-row">  <div class="bar-label">스토어</div>  <div class="bar-bg"><div class="bar-fill" style="width:5.3%"></div></div>  <div class="bar-value">1건 / ₩66,000</div></div>
+  </div>
+
+  <div class="card">
+    <h2>📌 상태 / CS</h2>
+    <div><span class="tag c24">결제대기 1</span> <span class="tag c24">결제완료 5</span></div>
+    <div style="margin-top:12px;font-size:13px;color:var(--text-muted)">
+      취소·환불·반품: <strong>0건</strong>
+    </div>
+  </div>
+
+  <div class="card highlight-products">
+    <h2>📦 판매 상품 전체 (17종 / 총 20개) — 제품 준비용</h2>
+    <table class="product-table"><tr><td style="width:30px;color:var(--text-muted);text-align:right">1</td><td class="pname">r행어 <span class="opt-tag">행어=r행어</span></td><td class="pqty">3개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">2</td><td class="pname">콤마나인 IBX 전용 스퀘어 선반 사이드 선반 <span class="opt-tag">색상: 블랙</span></td><td class="pqty">2개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">3</td><td class="pname">파이어 우드 스탠드</td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">4</td><td class="pname">IBX 전용 플레이트 <span class="opt-tag">색상=탄</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">5</td><td class="pname">IBX 오덕 <span class="opt-tag">Type=B. 체결형 + 파우치</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">6</td><td class="pname">캐니언 RV 테이블 <span class="opt-tag">색상=무도장 탄</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">7</td><td class="pname">캐니언 RV 테이블 <span class="opt-tag">가방=RV 테이블 가방</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">8</td><td class="pname">IBX 버너 <span class="opt-tag">색상=탄</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">9</td><td class="pname">IBX 확장 테이블 가방(M)</td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">10</td><td class="pname">마카오 프레임 전용 행어 슬라이드 브라켓 <span class="opt-tag">브라켓=마카오 프레임 전용 행어 슬라이드 브라켓</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">11</td><td class="pname">RV 1유닛 테이블 <span class="opt-tag">색상=스텐 410mm</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">12</td><td class="pname">RV 1유닛 테이블 <span class="opt-tag">RV 1유닛 전용 하판=스텐</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">13</td><td class="pname">RV 1유닛 테이블 <span class="opt-tag">RV 1유닛 확장테이블=스텐 410mm용</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">14</td><td class="pname">RV 1유닛 테이블 가방</td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">15</td><td class="pname">행잉 트레이 <span class="opt-tag">색상=스텐</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">16</td><td class="pname">엔트리 · 마카오 3유닛 하판 <span class="opt-tag">색상=블랙</span></td><td class="pqty">1개</td></tr><tr><td style="width:30px;color:var(--text-muted);text-align:right">17</td><td class="pname">마카오 3유닛 IGT 하판 파우치</td><td class="pqty">1개</td></tr></table>
+  </div>
+
+  <div class="card">
+    <h2>📋 전체 주문 (6건)</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>시간</th><th>채널</th><th>주문</th><th>고객</th><th>상태</th><th>매출</th><th>상품</th>
+      </tr></thead>
+      <tbody><tr class="new"><td>23:23</td><td><span class="tag c24">자사몰</span></td><td>#176</td><td>염**<span class="tag new">⭐신규</span></td><td>결제대기</td><td class="amount">₩67,000</td><td class="items-cell">파이어 우드 스탠드×1</td></tr><tr class="new"><td>23:04</td><td><span class="tag c24">자사몰</span></td><td>#93</td><td>우**<span class="tag new">⭐신규</span></td><td>결제완료</td><td class="amount">₩569,500<div class="cash">실결제 ₩506,550</div></td><td class="items-cell">r행어 <span class="opt">(행어=r행어)</span>×1, IBX 전용 플레이트 <span class="opt">(색상=탄)</span>×1, IBX 오덕 <span class="opt">(Type=B. 체결형 + 파우치)</span>×1, 캐니언 RV 테이블 <span class="opt">(색상=무도장 탄)</span>×1, 캐니언 RV 테이블 <span class="opt">(가방=RV 테이블 가방)</span>×1, IBX 버너 <span class="opt">(색상=탄)</span>×1</td></tr><tr><td>18:57</td><td><span class="tag ss">스토어</span></td><td>#728241</td><td>김**</td><td>결제완료</td><td class="amount">₩66,000</td><td class="items-cell">콤마나인 IBX 전용 스퀘어 선반 사이드 선반 <span class="opt">(색상: 블랙)</span>×2</td></tr><tr class="new"><td>17:20</td><td><span class="tag c24">자사몰</span></td><td>#82</td><td>윤**<span class="tag new">⭐신규</span></td><td>결제완료</td><td class="amount">₩65,000<div class="cash">실결제 ₩52,500</div></td><td class="items-cell">IBX 확장 테이블 가방(M)×1, 마카오 프레임 전용 행어 슬라이드 브라켓 <span class="opt">(브라켓=마카오 프레임 전용 행어 슬라이드 브라켓)</span>×1, r행어 <span class="opt">(행어=r행어)</span>×1</td></tr><tr class="new"><td>10:34</td><td><span class="tag c24">자사몰</span></td><td>#76</td><td>조**<span class="tag new">⭐신규</span></td><td>결제완료</td><td class="amount">₩463,000<div class="cash">실결제 ₩410,700</div></td><td class="items-cell">r행어 <span class="opt">(행어=r행어)</span>×1, RV 1유닛 테이블 <span class="opt">(색상=스텐 410mm)</span>×1, RV 1유닛 테이블 <span class="opt">(RV 1유닛 전용 하판=스텐)</span>×1, RV 1유닛 테이블 <span class="opt">(RV 1유닛 확장테이블=스텐 410mm용)</span>×1, RV 1유닛 테이블 가방×1, 행잉 트레이 <span class="opt">(색상=스텐)</span>×1</td></tr><tr class="new"><td>06:22</td><td><span class="tag c24">자사몰</span></td><td>#15</td><td>신**<span class="tag new">⭐신규</span></td><td>결제완료</td><td class="amount">₩85,000<div class="cash">실결제 ₩68,500</div></td><td class="items-cell">엔트리 · 마카오 3유닛 하판 <span class="opt">(색상=블랙)</span>×1, 마카오 3유닛 IGT 하판 파우치×1</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <footer>
+    Generated at 2026-05-03 20:50 KST · <a href="../">전체 리포트 목록</a>
+  </footer>
+</div>
+</body>
+</html>
