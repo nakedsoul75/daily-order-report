@@ -129,6 +129,16 @@ def _build_order_row(o: dict[str, Any]) -> dict[str, Any]:
     sub_channel = _short_subchannel(channel, o.get("shop_name"))
     items = o.get("items", []) or []
 
+    # Forwarder detection (배대지 감지)
+    receiver_name = o.get("receiver_name") or ""
+    receiver_address = o.get("receiver_address") or ""
+    is_overseas = False
+    try:
+        from src import forwarder
+        is_overseas = forwarder.is_overseas_proxy(receiver_name, receiver_address)
+    except Exception:
+        pass
+
     # daily-report 한 주문 = 한 채널/주문번호 — 여러 items 가능
     # Supabase orders 테이블은 line item 단위 (channel, order_no, sku_code, qty UNIQUE)
     # → 각 item을 별도 row로 분리
@@ -158,6 +168,9 @@ def _build_order_row(o: dict[str, Any]) -> dict[str, Any]:
             "amount": int(float(it.get("price") or 0)) * qty if it.get("price") else None,
             "cash_paid": None,  # cash split between items isn't accurate; keep order-level total separate
             "buyer_name": o.get("buyer_name"),
+            "receiver_name": receiver_name or None,
+            "receiver_address": receiver_address or None,
+            "is_overseas_proxy": is_overseas,
             "order_date": o.get("order_date"),
             "is_first_order": bool(o.get("first_order")),
             "status": o.get("status") or "NEW",

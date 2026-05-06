@@ -168,6 +168,17 @@ class Cafe24Client:
         order_value = actual.get("order_price_amount") or order.get("payment_amount") or 0
         cash_paid = order.get("payment_amount") or 0
 
+        # 수령자 정보 (배대지 감지용)
+        receivers = order.get("receivers") or []
+        receiver_name = ""
+        receiver_address = ""
+        if receivers:
+            r0 = receivers[0]
+            receiver_name = (r0.get("name") or "").strip()
+            # 주소 조합
+            addr_parts = [r0.get("address1") or "", r0.get("address2") or ""]
+            receiver_address = " ".join(p for p in addr_parts if p).strip()
+
         return {
             "channel": "cafe24",
             "shop_no": order.get("shop_no"),
@@ -175,6 +186,8 @@ class Cafe24Client:
             "order_id": order.get("order_id"),
             "order_date": order.get("order_date"),
             "buyer_name": order.get("billing_name"),
+            "receiver_name": receiver_name,
+            "receiver_address": receiver_address,
             "amount": int(float(order_value)),
             "cash_paid": int(float(cash_paid)),
             "first_order": order.get("first_order") == "T",

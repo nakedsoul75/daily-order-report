@@ -133,14 +133,21 @@ class SmartStoreClient:
         """Convert Naver order to common schema."""
         product_order = order.get("productOrder", {}) or {}
         order_main = order.get("order", {}) or {}
+        shipping = order.get("shippingAddress", {}) or product_order.get("shippingAddress", {}) or {}
         amount = int(product_order.get("totalPaymentAmount") or 0)
         raw_status = product_order.get("productOrderStatus") or ""
+
+        receiver_name = (shipping.get("name") or "").strip()
+        addr_parts = [shipping.get("baseAddress") or "", shipping.get("detailedAddress") or ""]
+        receiver_address = " ".join(p for p in addr_parts if p).strip()
         return {
             "channel": "smartstore",
             "shop_name": self.shop_name,
             "order_id": product_order.get("productOrderId"),
             "order_date": order_main.get("orderDate"),
             "buyer_name": order_main.get("ordererName"),
+            "receiver_name": receiver_name,
+            "receiver_address": receiver_address,
             "amount": amount,
             "cash_paid": amount,
             "first_order": False,  # SmartStore doesn't expose this in basic order data

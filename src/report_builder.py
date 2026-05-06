@@ -72,6 +72,25 @@ def aggregate(
     product_qty: Counter[str] = Counter()
     cs_count = 0
     new_buyer_count = 0
+    overseas_count = 0
+    overseas_amount = 0
+
+    # Detect overseas (배대지) per order
+    try:
+        from src import forwarder
+    except ImportError:
+        forwarder = None
+    for o in orders:
+        if forwarder is None:
+            o["_is_overseas"] = False
+        else:
+            o["_is_overseas"] = forwarder.is_overseas_proxy(
+                o.get("receiver_name") or o.get("buyer_name"),
+                o.get("receiver_address"),
+            )
+        if o["_is_overseas"]:
+            overseas_count += 1
+            overseas_amount += int(o.get("amount") or 0)
 
     for o in orders:
         sk = _subchannel_key(o)
@@ -101,6 +120,8 @@ def aggregate(
         "all_products": product_qty.most_common(),  # full list for HTML report
         "cs_count": cs_count,
         "new_buyer_count": new_buyer_count,
+        "overseas_count": overseas_count,
+        "overseas_amount": overseas_amount,
         "total_count": sum(c["count"] for c in by_subchannel.values()),
         "total_amount": sum(c["amount"] for c in by_subchannel.values()),
         "total_cash": sum(c["cash"] for c in by_subchannel.values()),
@@ -147,10 +168,11 @@ def _extract_time(order_date: str) -> str:
 
 
 def _format_order_line(o: dict[str, Any]) -> str:
-    """Format: [C24/한국어 #193] (홍**) 13:32 결제완료⭐신규 ₩25,500 — 상품×1"""
+    """Format: [자사몰 #193] (홍**) 13:32 결제완료⭐신규 [직구] ₩25,500 — 상품×1"""
     ch, sub = _subchannel_key(o)
     ch = _subchannel_label(ch, sub, full=False)
     oid = _short_order_id(o.get("order_id") or "")
+    overseas_tag = " [직구]" if o.get("_is_overseas") else ""
     buyer = _mask_name(o.get("buyer_name") or "")
     time_str = _extract_time(o.get("order_date") or "")
     status = o.get("status") or "?"
@@ -174,7 +196,7 @@ def _format_order_line(o: dict[str, Any]) -> str:
     if cash > 0 and cash != amount:
         money_str += f" (실결제 ₩{cash:,})"
 
-    parts = [f"[{ch} #{oid}]", f"({buyer})", time_str, f"{status}{new_marker}", money_str, "—", item_str]
+    parts = [f"[{ch} #{oid}]", f"({buyer})", time_str, f"{status}{new_marker}{overseas_tag}", money_str, "—", item_str]
     return " ".join(p for p in parts if p)
 
 
@@ -371,6 +393,10 @@ def format_short_kakao(
     if stats["total_cash"] != stats["total_amount"]:
         cash_note = f"\n  (실 카드결제: ₩{stats['total_cash']:,})"
 
+    overseas_note = ""
+    if stats.get("overseas_count", 0) > 0:
+        overseas_note = f"\n🌏 직구 {stats['overseas_count']}건 / ₩{stats['overseas_amount']:,}"
+
     return (
         f"📦 {slot_label} 일일 리포트\n"
         f"\n"
@@ -379,6 +405,7 @@ def format_short_kakao(
         f"💰 총 {stats['total_count']}건 / ₩{stats['total_amount']:,}{new_note}"
         f"{cash_note}\n"
         + "\n".join(sub_lines) + "\n"
+        f"{overseas_note}"
         f"\n"
         f"📄 상세 리포트:\n"
         f"{report_url}"
@@ -464,6 +491,7 @@ tr:hover { background: #fafaf9; }
 .tag.c24 { background: #dbeafe; color: #1e40af; }
 .tag.ss { background: #dcfce7; color: #166534; }
 .tag.new { background: #fde68a; color: #92400e; margin-left: 4px; }
+.tag.overseas { background: #ede9fe; color: #6d28d9; margin-left: 4px; font-weight: 600; }
 .amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 .cash { color: var(--text-muted); font-size: 11px; }
 .items-cell { color: var(--text-muted); font-size: 12px; max-width: 320px; }
@@ -574,6 +602,8 @@ def format_html_report(
         status = first.get("status") or "?"
         is_new = any(o.get("first_order") for o in g)
         new_chip = '<span class="tag new">⭐신규</span>' if is_new else ''
+        is_overseas = any(o.get("_is_overseas") for o in g)
+        overseas_chip = '<span class="tag overseas">🌏직구</span>' if is_overseas else ''
         row_class = ' class="new"' if is_new else ''
 
         if is_grouped:
@@ -614,7 +644,7 @@ def format_html_report(
             f'<td>{_esc(time_str)}</td>'
             f'<td><span class="tag {ch_class}">{_esc(ch_label)}</span></td>'
             f'<td>{_esc(oid)}</td>'
-            f'<td>{_esc(buyer)}{new_chip}</td>'
+            f'<td>{_esc(buyer)}{new_chip}{overseas_chip}</td>'
             f'<td>{_esc(status)}</td>'
             f'<td class="amount">₩{total_amount:,}{cash_note}</td>'
             f'<td class="items-cell">{items_html}</td>'
