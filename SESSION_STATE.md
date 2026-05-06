@@ -185,17 +185,69 @@ python scripts/get_cafe24_token.py --redirect-uri "https://nakedsoul75.github.io
 powershell -ExecutionPolicy Bypass -File scripts\register_scheduler.ps1
 ```
 
-## 최근 commit 히스토리
+## 최근 commit 히스토리 (최신순)
 
+- `00e3e63` 직구 (배대지) 감지 — Sheet2 461행 학습 + 카톡/HTML/Streamlit 통합
+- `de32f2a` Graceful per-channel error handling
 - `4a7d2d4` HTML report + short Kakao msg with link
-- `83db772` Report polish: Korean status, store-named SmartStore, grouped multi-orders
-- `fc2a603` SmartStore credentials updated to 콤마캠핑 store
-- `33f913b` Multi-shop support: fetch from all configured Cafe24 shops
-- `b9bd4a2` Enhanced order report: multi-message, accurate amount, buyer details
-- `697500b` Add full order list to Kakao report
-- `de47d8e` Live integration complete: Cafe24 v2026-03-01 + SmartStore + Kakao + scheduler
-- `2409523` Move site files to docs/ root for GitHub Pages compatibility
-- `af493f2` Initial commit: Daily order report bot
+- (중간 생략) ...
+- `af493f2` Initial commit
+
+## 🔥 진행 중 — 다음 세션에서 즉시 이어갈 작업 (2026-05-06 기준)
+
+### ⚠️ 결정 대기 중 — SmartStore 데이터 누락 이슈
+
+**문제**: 지난주매출 카톡에 SmartStore "스토어 3건"으로 나옴 → 실제 86건 (96.5% 누락).
+- 원인: `lastChangedType=PAYED` 필터가 너무 좁음. 그 기간 내 "결제완료로 변경된" 주문만 잡힘.
+- 그 기간 내 활동 status 분포: PURCHASE_DECIDED 45건, DISPATCHED 23건, CLAIM_COMPLETED 15건, **PAYED 3건만**
+- 추가: 지난달매출(30일치)에서 SmartStore API 429 Too Many Requests (rate limit)
+
+**진단 결과 (이미 수행)**:
+- `last-changed-statuses` API는 본질적으로 "기간 내 status 변경된 주문" 용도 → 매출 집계 부적합
+- moreSequence 페이지네이션은 OK (각 chunk 100건 미만, 누락 X)
+- chunk 사이 sleep 없어서 30+ chunk 호출 시 429 발생
+
+**제시한 옵션 (사용자 결정 대기)**:
+- **[A] paymentDate 기준 재구현 (1시간) ⭐ 추천** — `/v1/pay-order/seller/product-orders` + `rangeType=PAYED_DATETIME`
+- [B] lastChangedType 제거 + dedup (10분)
+- [C] 옵션 B + status별 분류 표시 (30분)
+- [D] Rate limit sleep만 추가 (5분, 데이터 누락은 그대로)
+
+**다음 세션 첫 작업**: 사용자 결정 받고 → A/B/C/D 중 진행.
+
+### ✅ 직구 감지 시스템 (2026-05-06 완료, 라이브 운영 중)
+
+- `data/forwarder_dict.json`: Sheet2 461행에서 학습 — 95 names + 102 addresses + 63 keywords
+- `src/forwarder.py`: 4-tier 감지 (allowlist → addr fp → keywords → pattern)
+- 한국 일반인 false positive 방지 (한글 성씨 + 키워드만 매칭은 무시)
+- 카톡: "🌏 직구 N건 / ₩X" 한 줄 추가
+- HTML: 주문 행에 [🌏직구] 보라 태그
+- Supabase orders.is_overseas_proxy 자동 저장 (SQL 마이그레이션 02 완료됨)
+- Streamlit: 직구 필터 + 대시보드 카운트 + "직구" 컬럼
+
+### ✅ 바탕화면 .bat 파일 5종 (2026-05-06 완료)
+
+`C:\Users\naked\Desktop\` 에 cp949 인코딩으로 저장:
+- `오늘매출.bat` → `--slot=today`
+- `어제매출.bat` → `--slot=morning`
+- `지난주매출.bat` → `--slot=last_week` (월~일 7일)
+- `이번달매출.bat` → `--slot=this_month` (1일~지금)
+- `지난달매출.bat` → `--slot=last_month` (지난달 전체)
+
+### main.py 신규 slot (2026-05-06 추가)
+
+- `today` — 오늘 00:00 ~ 지금
+- `last_week` — 지난주 월~일
+- `this_month` — 이번달 1일 ~ 지금
+- `last_month` — 지난달 1일 ~ 말일
+- 기존: morning / midday / evening / test / alert
+
+### 현재 운영 상태 (2026-05-06)
+
+- **카톡 자동 발송**: 08:30 / 09:00 / 12:30 / 18:00 정상 동작
+- **Supabase orders**: 209+ 건 적재 중 (스마트스토어 적재율 낮음 — 위 이슈)
+- **commanine-inventory.streamlit.app**: 외부 인터넷 접근 가능
+- **GitHub 토큰 무효화**: ⚠️ 아직 처리 안 됨 (5/2 노출분) — 별도 처리 필요
 
 ---
 
