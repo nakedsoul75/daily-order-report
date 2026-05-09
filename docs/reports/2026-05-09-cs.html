@@ -59,7 +59,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 <div class="kpi total"><div class="num">1</div><div class="lbl">신규 문의 (오늘)</div></div>
 <div class="kpi critical"><div class="num">0</div><div class="lbl">🔴 CRITICAL</div><div class="ctx">매출 영향 (취소/환불/반품)</div></div>
 <div class="kpi normal"><div class="num">0</div><div class="lbl">🟡 NORMAL</div><div class="ctx">일반 부정 (해결 가능)</div></div>
-<div class="kpi bl"><div class="num">0</div><div class="lbl">⚫ 블랙리스트</div><div class="ctx">특별 관리 대상</div></div>
+<div class="kpi bl"><div class="num">0</div><div class="lbl">🔔 응대 유의</div><div class="ctx">사전 인지 (알람용)</div></div>
 </div>
 
 
@@ -68,7 +68,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 <strong>긴급 등급 판단 기준</strong>
 🔴 <strong>CRITICAL</strong>: 매출 영향 — 취소·환불·반품 요청 (직접 매출 감소 + 처리 잘못 시 SNS 확산 위험)<br>
 🟡 <strong>NORMAL</strong>: 일반 부정 — 파손·누락·불량·하자 (표준 절차로 해결 가능)<br>
-⚫ <strong>블랙리스트</strong>: 사전 등록한 특별 관리 대상 (blacklist.txt 파일에 등록)
+🔔 <strong>응대 유의 명단</strong>: 사전 등재한 알람용 명단 (blacklist.txt 파일). 자동 차단·거부는 하지 않음. 운영자가 신중하게 응대하도록 사전 인지 정보만 제공.
 </div>
 
 <h2>📊 채널·카테고리 분포</h2>
@@ -105,10 +105,11 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 </table>
 </div>
 
-<h2>⚫ 블랙리스트 매칭 (0)</h2>
+<h2>🔔 응대 유의 명단 매칭 (0)</h2>
 <div class="card">
 <p style="font-size:12px;color:#6b7280;margin-bottom:8px;">
-등록된 특별 관리 대상: <strong>0명</strong> · 파일: <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;">daily_report/blacklist.txt</code>
+사전 등재된 알람용 명단: <strong>14명</strong> · 파일: <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;">daily_report/blacklist.txt</code><br>
+※ 자동 차단·거부 X — 운영자가 응대 시 사전 인지하도록 알람만 제공
 </p>
 <table>
 <thead><tr><th>시각</th><th>채널</th><th>카테고리</th><th>매칭</th><th>내용 + 제품</th></tr></thead>
@@ -153,7 +154,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 </div>
 
 <div class="footer">
-생성 시각: 2026-05-09 22:38:09 / 채널톡 Open API v5<br>
+생성 시각: 2026-05-09 23:49:40 / 채널톡 Open API v5<br>
 다음 보고서: 2026-05-10 17:00 자동 생성
 </div>
 
