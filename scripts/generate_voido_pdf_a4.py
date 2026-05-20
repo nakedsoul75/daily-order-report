@@ -63,7 +63,7 @@ def page_header(ax, page_num, total_pages, title):
 def page_footer(ax, page_num):
     """페이지 하단 푸터."""
     ax.plot([10, 90], [6, 6], color=C_BORDER, lw=0.5)
-    t(ax, 10, 3, "콤마나인 / 디엘나인  |  Voido 사업기획팀",
+    t(ax, 10, 3, "디엘나인  |  Voido 사업기획팀",
       size=9, color=C_GRAY, ha='left')
     t(ax, 90, 3, f"- {page_num} -", size=9, color=C_GRAY, ha='right')
 
@@ -88,7 +88,7 @@ with PdfPages(pdf_path) as pdf:
     t(ax, 50, 116,
       "강제성 없는 어필리에이트 + 자체 제조 원가 우위 + 협상력 플라이휠",
       size=12, color='#CBD5E1', style='italic')
-    t(ax, 50, 112, "2026.05.19  |  콤마나인 사업기획팀",
+    t(ax, 50, 112, "2026.05.19  |  디엘나인 사업기획팀",
       size=10, color='#94A3B8')
 
     # 한 줄 정의
@@ -111,7 +111,7 @@ with PdfPages(pdf_path) as pdf:
          ["최선단 점주 접점",
           "영업 성공율 상승",
           "영업 비용 절감"], C_BLUE),
-        (65, "콤마나인",
+        (65, "디엘나인",
          ["영업 약점 회피",
           "인프라 수수료 누적",
           "지속 마진 확보"], C_PURPLE),
@@ -271,7 +271,7 @@ with PdfPages(pdf_path) as pdf:
     t(ax, 50, 118, "▶ 영업 조직 외주화 (핵심 혁신)",
       size=17, color=C_NAVY, weight='bold')
     t(ax, 50, 114,
-      "콤마나인은 접점 큐레이션만 담당, 영업은 외부 파트너가 수행",
+      "디엘나인은 접점 큐레이션만 담당, 영업은 외부 파트너가 수행",
       size=11, color=C_GRAY, style='italic')
 
     # 상단 2개 박스
@@ -365,7 +365,7 @@ with PdfPages(pdf_path) as pdf:
             t(ax, x + 13, 104 - i * 3.5, d, size=10, color='white')
 
     # 차별화 3대 카드
-    t(ax, 50, 88, "▶ 콤마나인만의 차별화 3대 카드",
+    t(ax, 50, 88, "▶ 디엘나인만의 차별화 3대 카드",
       size=17, color=C_NAVY, weight='bold')
 
     cards = [

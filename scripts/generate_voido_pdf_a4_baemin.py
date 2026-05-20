@@ -59,7 +59,7 @@ def page_header(ax, page_num, total_pages, title):
 
 def page_footer(ax, page_num):
     ax.plot([10, 90], [6, 6], color=C_BORDER, lw=0.5)
-    t(ax, 10, 3, "콤마나인 × 배달의민족  |  내부 영업 교육용",
+    t(ax, 10, 3, "디엘나인 × 배달의민족  |  내부 영업 교육용",
       size=9, color=C_GRAY, ha='left')
     t(ax, 90, 3, f"- {page_num} -", size=9, color=C_GRAY, ha='right')
 
@@ -76,7 +76,7 @@ with PdfPages(pdf_path) as pdf:
     rect(ax, 0, 110, 100, 31, C_TEAL_DARK, ec='none')
     t(ax, 50, 130, "배민 광고 영업 협업 제안",
       size=28, color='white', weight='bold')
-    t(ax, 50, 122, "콤마나인 × 배달의민족 광고 영업",
+    t(ax, 50, 122, "디엘나인 × 배달의민족 광고 영업",
       size=15, color='#A7F3D0')
     t(ax, 50, 117, "Win-Win 파트너십",
       size=13, color='#6EE7B7', style='italic')
@@ -114,7 +114,7 @@ with PdfPages(pdf_path) as pdf:
     t(ax, 50, 46, "■ 이 자료의 목적", size=14,
       color=C_TEAL_DARK, weight='bold')
     t(ax, 50, 41,
-      "콤마나인과의 협업이 위 3가지 문제를 어떻게 해결하는지",
+      "디엘나인과의 협업이 위 3가지 문제를 어떻게 해결하는지",
       size=12, color=C_TEXT)
     t(ax, 50, 37,
       "그리고 당신과 팀에게 어떤 구체적 이득이 있는지를",
@@ -131,7 +131,7 @@ with PdfPages(pdf_path) as pdf:
     # PAGE 2: LIFECYCLE TIMELINE + 5-STEP PROCESS
     # ============================================================
     fig, ax = new_page()
-    page_header(ax, 2, TOTAL_PAGES, "콤마나인은 점주를 가장 먼저 만납니다")
+    page_header(ax, 2, TOTAL_PAGES, "디엘나인은 점주를 가장 먼저 만납니다")
 
     # 타임라인 다이어그램
     t(ax, 50, 118, "▶ 점주 라이프사이클 — 누가 언제 만나는가?",
@@ -151,9 +151,9 @@ with PdfPages(pdf_path) as pdf:
         ax.add_patch(Circle((x, 103), 1.8, facecolor=C_TEXT))
         t(ax, x, 96, label, size=11, color=C_TEXT, weight='bold')
 
-    # 콤마나인 진입
+    # 디엘나인 진입
     box(ax, 8, 108, 28, 6, C_TEAL, alpha=0.95, radius=2)
-    t(ax, 22, 111, "콤마나인 진입", size=12, color='white', weight='bold')
+    t(ax, 22, 111, "디엘나인 진입", size=12, color='white', weight='bold')
     ax.annotate("", xy=(15, 105), xytext=(22, 108),
                 arrowprops=dict(arrowstyle="->", color=C_TEAL, lw=2.5))
 
@@ -167,7 +167,7 @@ with PdfPages(pdf_path) as pdf:
     # 핵심 메시지 박스
     box(ax, 7, 78, 86, 13, C_BG, radius=2)
     t(ax, 50, 87,
-      "콤마나인과 협업하면 = 점주가 가게를 만드는 단계에서 연결",
+      "디엘나인과 협업하면 = 점주가 가게를 만드는 단계에서 연결",
       size=13, color=C_TEAL_DARK, weight='bold')
     t(ax, 50, 82,
       "오픈 후 접근 (X)  →  인테리어 단계 사전 접점 (○)",
@@ -178,11 +178,11 @@ with PdfPages(pdf_path) as pdf:
       size=15, color=C_TEAL_DARK, weight='bold')
 
     steps = [
-        ("1", "콤마나인이\n점주와\n인테리어 계약", C_TEAL),
+        ("1", "디엘나인이\n점주와\n인테리어 계약", C_TEAL),
         ("2", "토털 패키지에\n'배민 깃발'\n옵션 포함", C_TEAL_DARK),
         ("3", "점주 관심 표시\n→ 당신에게\n리드 전달", C_ORANGE),
         ("4", "당신이 점주\n방문하여\n클로징", C_GREEN),
-        ("5", "광고비 0.5%\n콤마나인 수수료\n당신 커미션 그대로", C_AMBER),
+        ("5", "광고비 0.5%\n디엘나인 수수료\n당신 커미션 그대로", C_AMBER),
     ]
 
     step_w = 16.5
@@ -235,7 +235,7 @@ with PdfPages(pdf_path) as pdf:
          "발굴 시간 줄어",
          "월 처리 건수 2배"),
         ("커미션 100% 유지",
-         "콤마나인 수수료는 별도",
+         "디엘나인 수수료는 별도",
          "당신 수입 그대로"),
     ]
     for i, (title, d1, d2) in enumerate(benefits):
@@ -253,7 +253,7 @@ with PdfPages(pdf_path) as pdf:
       size=15, color=C_TEAL_DARK, weight='bold')
 
     fee_boxes = [
-        (7, "콤마나인이\n받는 것", "광고비의\n0.5%",
+        (7, "디엘나인이\n받는 것", "광고비의\n0.5%",
          "별도 — 광고사 지급", C_TEAL_DARK),
         (37, "당신이\n받는 것", "기존 커미션\n100%",
          "그대로 — 변동 없음", C_GREEN),
@@ -281,7 +281,7 @@ with PdfPages(pdf_path) as pdf:
 
     risks = [
         ("접점만 제공",
-         "콤마나인은 영업·클로징·CS에 개입하지 않음"),
+         "디엘나인은 영업·클로징·CS에 개입하지 않음"),
         ("점주 DB 당신이 보유",
          "리드 전달 후 점주 관계는 당신의 자산"),
         ("다른 광고사로 빼가지 않음",
@@ -303,7 +303,7 @@ with PdfPages(pdf_path) as pdf:
       size=15, color=C_TEAL_DARK, weight='bold')
 
     start_steps = [
-        ("1", "콤마나인 영천 사옥 방문",
+        ("1", "디엘나인 영천 사옥 방문",
          ["공장 + 쇼룸 라인 투어", "실체 있는 회사 확인"]),
         ("2", "협력 계약 체결",
          ["수수료 룰 합의", "점주 보호 조항 포함"]),
@@ -361,10 +361,10 @@ with PdfPages(pdf_path) as pdf:
 
     summary_items = [
         ("문제", "콜드콜·발품·늦은 진입·낮은 클로징"),
-        ("해결책", "콤마나인이 인테리어 단계에서 점주를 만남"),
+        ("해결책", "디엘나인이 인테리어 단계에서 점주를 만남"),
         ("프로세스", "5단계 협업 (계약 → 옵션 → 리드 → 방문 → 클로징)"),
         ("당신 이득", "콜드콜 0 / 클로징↑ / 시간↓ / 커미션 100% 유지"),
-        ("수수료", "콤마나인 0.5% (별도) / 당신 100% / 점주 시장가"),
+        ("수수료", "디엘나인 0.5% (별도) / 당신 100% / 점주 시장가"),
         ("리스크", "0 — 접점만 제공, 영업·CS는 당신, 강제성 없음"),
         ("시작", "사옥 방문 → 계약 → 1주일 내 첫 리드"),
     ]
@@ -377,7 +377,7 @@ with PdfPages(pdf_path) as pdf:
 
     # 문의처
     box(ax, 7, 11, 86, 6, '#0F172A', radius=2)
-    t(ax, 50, 14, "문의 : 콤마나인 사업기획팀  |  영천 사옥 투어 상시 가능",
+    t(ax, 50, 14, "문의 : 디엘나인 사업기획팀  |  영천 사옥 투어 상시 가능",
       size=11, color=C_ORANGE, weight='bold')
 
     page_footer(ax, 5)
