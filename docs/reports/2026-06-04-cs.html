@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>일일 CS 마감 보고서 — 2026-06-04</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f5f6f8; color: #1a1d23; line-height: 1.55; padding: 30px 20px; }
+.container { max-width: 1100px; margin: 0 auto; }
+header { background: linear-gradient(135deg, #1a1d23 0%, #2d3340 100%); color: white; padding: 32px 36px; border-radius: 16px; margin-bottom: 24px; }
+header .label { font-size: 12px; letter-spacing: 0.15em; color: #8a92a3; text-transform: uppercase; }
+header h1 { font-size: 26px; font-weight: 700; margin-top: 8px; }
+header .meta { margin-top: 12px; font-size: 14px; color: #b8bfcc; }
+h2 { font-size: 16px; font-weight: 700; margin: 24px 0 10px; padding-left: 10px; border-left: 4px solid #1a1d23; }
+h3 { font-size: 14px; font-weight: 700; margin: 12px 0 8px; color: #4b5563; }
+.card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-top: 3px solid; }
+.kpi.total { border-color: #1a1d23; }
+.kpi.critical { border-color: #dc2626; }
+.kpi.normal { border-color: #d97706; }
+.kpi.bl { border-color: #7c3aed; }
+.kpi .num { font-size: 28px; font-weight: 700; color: #1a1d23; line-height: 1; }
+.kpi.critical .num { color: #dc2626; }
+.kpi.normal .num { color: #d97706; }
+.kpi.bl .num { color: #7c3aed; }
+.kpi .lbl { font-size: 12px; color: #6b7280; margin-top: 4px; }
+.kpi .ctx { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #e5e7eb; }
+th { background: #f9fafb; font-weight: 600; color: #4b5563; font-size: 11px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 3px; margin-bottom: 2px; }
+.pill-critical { background: #fef2f2; color: #dc2626; }
+.pill-warn { background: #fffbeb; color: #d97706; }
+.pill-channel { background: #eff6ff; color: #1d4ed8; }
+.pill-sub { background: #f3f4f6; color: #4b5563; font-weight: 500; }
+.pill-bl { background: #1a1d23; color: white; font-weight: 700; }
+.warn-banner { background: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; color: #7f1d1d; }
+.warn-banner strong { display: block; margin-bottom: 2px; }
+.legend { background: #f9fafb; padding: 12px 16px; border-radius: 8px; font-size: 12px; color: #4b5563; margin-bottom: 12px; line-height: 1.7; }
+.legend strong { color: #1a1d23; }
+.footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+@media print { body { background: white; padding: 0; } header { background: #1a1d23 !important; -webkit-print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+<div class="label">DAILY CS CLOSING REPORT</div>
+<h1>2026-06-04 일일 CS 마감 보고서</h1>
+<div class="meta">콤마나인 / 17:00 마감 / 채널톡 Open API</div>
+</header>
+
+<div class="kpi-grid">
+<div class="kpi total"><div class="num">5</div><div class="lbl">신규 문의 (오늘)</div></div>
+<div class="kpi critical"><div class="num">0</div><div class="lbl">🔴 CRITICAL</div><div class="ctx">매출 영향 (취소/환불/반품)</div></div>
+<div class="kpi normal"><div class="num">0</div><div class="lbl">🟡 NORMAL</div><div class="ctx">일반 부정 (해결 가능)</div></div>
+<div class="kpi bl"><div class="num">0</div><div class="lbl">🔔 응대 유의</div><div class="ctx">사전 인지 (알람용)</div></div>
+</div>
+
+
+
+<div class="legend">
+<strong>긴급 등급 판단 기준</strong>
+🔴 <strong>CRITICAL</strong>: 매출 영향 — 취소·환불·반품 요청 (직접 매출 감소 + 처리 잘못 시 SNS 확산 위험)<br>
+🟡 <strong>NORMAL</strong>: 일반 부정 — 파손·누락·불량·하자 (표준 절차로 해결 가능)<br>
+🔔 <strong>응대 유의 명단</strong>: 사전 등재한 알람용 명단 (blacklist.txt 파일). 자동 차단·거부는 하지 않음. 운영자가 신중하게 응대하도록 사전 인지 정보만 제공.
+</div>
+
+<h2>📊 채널·카테고리 분포</h2>
+<div class="row-2">
+<div class="card">
+<h3>채널별</h3>
+<table>
+<thead><tr><th>채널</th><th class="num">건수</th><th class="num">비중</th></tr></thead>
+<tbody><tr><td>자사몰</td><td class="num">2건</td><td class="num">40.0%</td></tr>
+<tr><td>채널톡위젯</td><td class="num">2건</td><td class="num">40.0%</td></tr>
+<tr><td>네이버톡톡</td><td class="num">1건</td><td class="num">20.0%</td></tr></tbody>
+</table>
+</div>
+<div class="card">
+<h3>카테고리 (세분화 — Top 10)</h3>
+<table>
+<thead><tr><th>카테고리</th><th class="num">건수</th><th class="num">비중</th></tr></thead>
+<tbody><tr><td>배송-송장요청</td><td class="num">2건</td><td class="num">40.0%</td></tr>
+<tr><td>교환-제품하자</td><td class="num">1건</td><td class="num">20.0%</td></tr>
+<tr><td>제품-호환성</td><td class="num">1건</td><td class="num">20.0%</td></tr>
+<tr><td>배송-수령확인</td><td class="num">1건</td><td class="num">20.0%</td></tr></tbody>
+</table>
+</div>
+</div>
+
+<h2>🔴 CRITICAL 케이스 (0)</h2>
+<div class="card">
+<table>
+<thead><tr><th>시각</th><th>채널</th><th>카테고리</th><th>위험 유형</th><th>내용 + 제품</th></tr></thead>
+<tbody><tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:16px;">CRITICAL 케이스 없음 ✅</td></tr></tbody>
+</table>
+</div>
+
+<h2>🟡 NORMAL 부정 케이스 (0) — 해결 가능 영역</h2>
+<div class="card">
+<table>
+<thead><tr><th>시각</th><th>채널</th><th>카테고리</th><th>키워드</th><th>내용 + 제품</th></tr></thead>
+<tbody><tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:16px;">NORMAL 부정 케이스 없음 ✅</td></tr></tbody>
+</table>
+</div>
+
+<h2>🔔 응대 유의 명단 매칭 (0)</h2>
+<div class="card">
+<p style="font-size:12px;color:#6b7280;margin-bottom:8px;">
+사전 등재된 알람용 명단: <strong>14명</strong> · 파일: <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;">daily_report/blacklist.txt</code><br>
+※ 자동 차단·거부 X — 운영자가 응대 시 사전 인지하도록 알람만 제공
+</p>
+<table>
+<thead><tr><th>시각</th><th>채널</th><th>카테고리</th><th>매칭</th><th>내용 + 제품</th></tr></thead>
+<tbody><tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:16px;">블랙리스트 매칭 없음</td></tr></tbody>
+</table>
+</div>
+
+<h2>📈 주간 트렌드 (최근 7일: 05/29 ~ 06/04)</h2>
+<div class="row-3">
+<div class="kpi total"><div class="num">40</div><div class="lbl">주간 신규 (7일)</div></div>
+<div class="kpi critical"><div class="num">0</div><div class="lbl">주간 CRITICAL</div></div>
+<div class="kpi normal"><div class="num">2</div><div class="lbl">주간 NORMAL</div></div>
+</div>
+<div class="card">
+<h3>주간 카테고리 Top 5</h3>
+<table>
+<thead><tr><th>카테고리</th><th class="num">건수</th><th class="num">비중</th></tr></thead>
+<tbody><tr><td>기타</td><td class="num">13건</td><td class="num">32.5%</td></tr>
+<tr><td>배송-송장요청</td><td class="num">9건</td><td class="num">22.5%</td></tr>
+<tr><td>교환-제품하자</td><td class="num">4건</td><td class="num">10.0%</td></tr>
+<tr><td>제품-호환성</td><td class="num">3건</td><td class="num">7.5%</td></tr>
+<tr><td>제품-재고/품절</td><td class="num">3건</td><td class="num">7.5%</td></tr></tbody>
+</table>
+</div>
+
+<h2>🏆 월간 문제 제품 Top 5 (최근 30일)</h2>
+<div class="card">
+<p style="font-size:12px;color:#6b7280;margin-bottom:8px;">
+월간 총 대화 <strong>174건</strong> 중 제품별 부정 클레임(CRITICAL+NORMAL) 발생 빈도. 클레임율 = 부정 / 언급
+</p>
+<table>
+<thead><tr><th>제품</th><th class="num">월간 언급</th><th class="num">부정 클레임</th><th class="num">클레임율</th></tr></thead>
+<tbody><tr><td><strong>큐브박스</strong></td><td class="num">2언급</td><td class="num">2건</td><td class="num">100.0%</td></tr>
+<tr><td><strong>IBX 버너</strong></td><td class="num">1언급</td><td class="num">0건</td><td class="num">0.0%</td></tr>
+<tr><td><strong>캐니언 라이트</strong></td><td class="num">2언급</td><td class="num">0건</td><td class="num">0.0%</td></tr>
+<tr><td><strong>캐니언 다리</strong></td><td class="num">6언급</td><td class="num">0건</td><td class="num">0.0%</td></tr></tbody>
+</table>
+<p style="font-size:11px;color:#9ca3af;margin-top:10px;">
+※ 채널톡 메시지 키워드 매칭 기반 추정. 정확한 클레임율은 OMS 매출 데이터 결합 시 더 정밀.
+</p>
+</div>
+
+<div class="footer">
+생성 시각: 2026-06-04 17:01:21 / 채널톡 Open API v5<br>
+다음 보고서: 2026-06-05 17:00 자동 생성
+</div>
+
+</div>
+</body>
+</html>
