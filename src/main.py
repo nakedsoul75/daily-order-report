@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src import cafe24_client, kakao_client, report_builder, smartstore_client  # noqa: E402
+from src import cafe24_client, kakao_client, notify, report_builder, smartstore_client  # noqa: E402
 
 try:
     from src import supabase_sync  # noqa: E402
@@ -38,6 +38,10 @@ SLOTS = {
     "evening": "18:00 (일일 마감)",
     "test": "TEST",
     "alert": "09:00 (지연/재고 알림)",
+    "today": "오늘 누적 (지금까지)",
+    "last_week": "지난주 (월~일)",
+    "this_month": "이번달 (1일~지금)",
+    "last_month": "지난달 전체",
 }
 
 
@@ -62,6 +66,31 @@ def slot_period(slot: str, now_kst: datetime) -> tuple[datetime, datetime, str]:
         start = today_kst - timedelta(days=1)
         end = now_kst
         label = f"{start:%Y-%m-%d %H:%M} ~ {end:%Y-%m-%d %H:%M} (TEST)"
+    elif slot == "today":
+        start = today_kst
+        end = now_kst
+        label = f"{start:%Y-%m-%d} 00:00 ~ {end:%H:%M} (오늘 누적)"
+    elif slot == "last_week":
+        # 이번주 월요일 - 7일 = 지난주 월요일
+        days_since_monday = today_kst.weekday()  # 월=0, 일=6
+        this_monday = today_kst - timedelta(days=days_since_monday)
+        last_monday = this_monday - timedelta(days=7)
+        last_sunday = this_monday - timedelta(seconds=1)
+        start = last_monday
+        end = last_sunday
+        label = f"{start:%Y-%m-%d}(월) ~ {end:%Y-%m-%d}(일) 지난주"
+    elif slot == "this_month":
+        start = today_kst.replace(day=1)
+        end = now_kst
+        label = f"{start:%Y-%m} 1일 ~ {end:%m-%d %H:%M} (이번달 누적)"
+    elif slot == "last_month":
+        # 이번 달 1일 - 1일 = 지난달 마지막 날
+        first_this_month = today_kst.replace(day=1)
+        last_day_last_month = first_this_month - timedelta(seconds=1)
+        first_last_month = last_day_last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start = first_last_month
+        end = last_day_last_month
+        label = f"{start:%Y-%m} 1일 ~ {end:%Y-%m-%d} (지난달 전체)"
     else:
         raise ValueError(f"Unknown slot: {slot}")
     return start, end, label
@@ -106,11 +135,19 @@ def load_orders_mock() -> tuple[list[dict], list[tuple[str, str]], list[str]]:
     return orders, expected, []
 
 
+def _notifier_factory():
+    """알림 채널 팩토리. 기본=dispatch(로컬 아웃박스 → Claude PushNotification).
+    NOTIFY_CHANNEL=kakao 로 설정 시에만 레거시 카카오 사용(되돌림용)."""
+    if os.getenv("NOTIFY_CHANNEL", "dispatch").lower() == "kakao":
+        return kakao_client.from_env()
+    return notify.from_env()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--slot", choices=SLOTS.keys(), required=True)
     parser.add_argument("--mock", action="store_true", help="Use mock fixtures (no API call)")
-    parser.add_argument("--no-send", action="store_true", help="Print only, don't send Kakao")
+    parser.add_argument("--no-send", action="store_true", help="Print only, don't send/dispatch")
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
@@ -127,7 +164,7 @@ def main() -> int:
             if low:
                 print("\n=== 재고 부족 메시지 ===\n" + alerts.format_low_stock_message(low))
             return 0
-        result = alerts.run_morning_alerts(kakao_client.from_env)
+        result = alerts.run_morning_alerts(_notifier_factory)
         print(f"[ALERT] {result}")
         return 0
 
@@ -148,9 +185,9 @@ def main() -> int:
     except Exception as e:
         # Catastrophic failure (e.g., env missing)
         traceback.print_exc()
-        if not args.no_send and os.getenv("KAKAO_REFRESH_TOKEN"):
+        if not args.no_send:
             try:
-                kakao_client.from_env().send_text(
+                _notifier_factory().send_text(
                     f"⚠️ 주문 리포트 치명적 오류\nslot={args.slot}\n{type(e).__name__}: {e}"
                 )
             except Exception:
@@ -201,7 +238,7 @@ def main() -> int:
             # Show only channel name + status code, not full body
             short_e = e.split(":")[0] + " — " + (e.split("status=")[1].split(",")[0] if "status=" in e else "오류")
             short_msg += f"\n  {short_e}"
-    print(f"\n{'=' * 50}\n[Kakao Message] ({len(short_msg)} chars)\n{'=' * 50}")
+    print(f"\n{'=' * 50}\n[알림 메시지] ({len(short_msg)} chars)\n{'=' * 50}")
     print(short_msg)
     print("=" * 50 + "\n")
 
@@ -209,9 +246,9 @@ def main() -> int:
         print(f"[DRY RUN] Skipping Kakao send. URL: {report_url}")
         return 0
 
-    kc = kakao_client.from_env()
+    kc = _notifier_factory()
     result = kc.send_text(short_msg, link_url=report_url)
-    print(f"[SEND] Kakao response: {result}")
+    print(f"[SEND] dispatch: {result}")
     print(f"[REPORT URL] {report_url}")
     return 0
 

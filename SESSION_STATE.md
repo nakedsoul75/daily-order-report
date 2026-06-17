@@ -193,27 +193,52 @@ powershell -ExecutionPolicy Bypass -File scripts\register_scheduler.ps1
 - (중간 생략) ...
 - `af493f2` Initial commit
 
-## 🔥 진행 중 — 다음 세션에서 즉시 이어갈 작업 (2026-05-06 기준)
+## ✅ 해결 완료 — SmartStore 매출 누락 + 429 (2026-06-17, 옵션 A 채택)
 
-### ⚠️ 결정 대기 중 — SmartStore 데이터 누락 이슈
+**문제**: SmartStore가 매출 집계에서 대량 누락 + 30일치 조회 시 429.
+- 원인1(누락): `last-changed-statuses` + `lastChangedType=PAYED` → "기간 내 결제완료로 *변경*된" 주문만 잡힘 (매출 집계 부적합).
+- 원인2(429): chunk 사이 sleep 없어 30+ chunk 호출 시 rate limit.
 
-**문제**: 지난주매출 카톡에 SmartStore "스토어 3건"으로 나옴 → 실제 86건 (96.5% 누락).
-- 원인: `lastChangedType=PAYED` 필터가 너무 좁음. 그 기간 내 "결제완료로 변경된" 주문만 잡힘.
-- 그 기간 내 활동 status 분포: PURCHASE_DECIDED 45건, DISPATCHED 23건, CLAIM_COMPLETED 15건, **PAYED 3건만**
-- 추가: 지난달매출(30일치)에서 SmartStore API 429 Too Many Requests (rate limit)
+**해결 (옵션 A — paymentDate 기준 재구현)**: `src/smartstore_client.py`
+- 엔드포인트 교체: `GET /v1/pay-order/seller/product-orders` + `rangeType=PAYED_DATETIME` (결제일시 범위 전수 조회)
+- 24h chunk × `pagination.hasNext` 페이지 순회 (pageSize=100) — moreSequence 아님(실호출로 확정)
+- 응답 구조 변경 반영: `data.contents[].content.{order, productOrder}` (기존 query API보다 한 단계 깊음)
+- 429 지수 백오프(Retry-After 존중) + chunk/page 사이 `rate_limit_sleep`(기본 0.3s)
+- `normalize`: `order_date` = paymentDate 우선(폴백 orderDate), status/금액 필드는 기존 유지(report_builder 호환)
 
-**진단 결과 (이미 수행)**:
-- `last-changed-statuses` API는 본질적으로 "기간 내 status 변경된 주문" 용도 → 매출 집계 부적합
-- moreSequence 페이지네이션은 OK (각 chunk 100건 미만, 누락 X)
-- chunk 사이 sleep 없어서 30+ chunk 호출 시 429 발생
+**검증 (2026-06-17 실호출, --no-send)**:
+- 지난주 7일: **73건 errors=0** / 스토어 31건·₩3,148,000
+- 지난달 30일: **392건 errors=0** (← 429 해소 확정) / 스토어 168건·₩15,420,500
+- 단위/통합 테스트 **11건 PASS** (`tests/test_smartstore.py`) — normalize·페이지네이션·24h청크·429/401재시도·sleep
+- 로컬 게이트 `run_tests.bat` (ASCII, discover) 추가 → 1클릭 검증
 
-**제시한 옵션 (사용자 결정 대기)**:
-- **[A] paymentDate 기준 재구현 (1시간) ⭐ 추천** — `/v1/pay-order/seller/product-orders` + `rangeType=PAYED_DATETIME`
-- [B] lastChangedType 제거 + dedup (10분)
-- [C] 옵션 B + status별 분류 표시 (30분)
-- [D] Rate limit sleep만 추가 (5분, 데이터 누락은 그대로)
+**남은 고려사항**:
+- 결제일 기준이라 결제 후 **취소/반품 건도 매출에 포함**됨(카페24 포함 채널 공통 동작). 순매출 분리 원하면 status 필터 옵션 추가 가능.
+- (무관) 30일 대량 실행 중 Supabase DNS 일시 실패(getaddrinfo) — main.py가 graceful 처리, 리포트는 정상 생성. 7일치는 정상 upsert.
 
-**다음 세션 첫 작업**: 사용자 결정 받고 → A/B/C/D 중 진행.
+**신규/변경 파일** (⚠️ 아직 git commit 안 함 — 사용자 확인 후):
+- `src/smartstore_client.py` (재구현)
+- `tests/test_smartstore.py` + `tests/__init__.py` (신규)
+- `run_tests.bat` (로컬 게이트, 신규)
+- `scripts/diagnose_smartstore_payed.py` (옵션 A 진단, 신규)
+
+## ✅ 해결 완료 — 카카오 KOE010 + 발송 채널 복귀 (2026-06-18)
+
+**증상**: 카카오 KOE010(보안 설정 에러) 알림 반복.
+
+**원인 (2겹)**:
+1. refresh_token 만료/무효(KOE322). 근본은 `kakao_client`가 **회전된 refresh_token을 .env에 저장 안 함** → 회전 시점(~30일)에 옛 토큰 무효화. (cafe24_client는 `_default_persist`로 저장하고 있었는데 카카오만 누락)
+2. `get_kakao_token.py`가 토큰 교환 시 **client_secret 누락** → 재발급 시도마다 KOE010.
+
+**해결**:
+- `src/kakao_client.py`: cafe24와 동일한 `persist_refresh`(.env 저장) 추가 — 회전 토큰 영속화로 60일/회전 끊김 영구 차단.
+- `scripts/get_kakao_token.py`: 토큰 교환에 client_secret 포함 + `--code` 옵션(비대화형 재발급).
+- refresh_token 재발급 완료(.env 갱신), `NOTIFY_CHANNEL=kakao` 복원.
+- 검증: `verify_kakao_token.py` 발급 확인 / `main.py --slot=test` 운영경로 카카오 발송 `result_code=0` / `test_kakao.py` 5건 PASS.
+
+**운영**: 내일 08:30부터 스케줄러(4작업 Ready, LastResult=0)가 카카오로 자동 발송. dispatch 큐(레거시)는 미사용 — 정리 안 함.
+
+**남은 별도 이슈 (미해결, 별도 작업 필요)**: `alerts` 출하지연 헤더 "1000건" vs 실제 ~30건(카운트 버그 의심), 재고 음수(-40개) 정합성, 03-31 주문 77일+ 미출하 진위 확인.
 
 ### ✅ 직구 감지 시스템 (2026-05-06 완료, 라이브 운영 중)
 

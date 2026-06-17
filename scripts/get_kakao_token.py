@@ -34,6 +34,17 @@ def main() -> int:
         default="talk_message",
         help="요청할 권한 (default: talk_message)",
     )
+    parser.add_argument(
+        "--client-secret",
+        default=os.getenv("KAKAO_CLIENT_SECRET"),
+        help="카카오 앱 client_secret (기본: .env KAKAO_CLIENT_SECRET). "
+             "앱에 시크릿이 '사용함(필수)'이면 토큰 교환에 반드시 필요 — 누락 시 KOE010",
+    )
+    parser.add_argument(
+        "--code",
+        default=None,
+        help="인증 code (지정 시 대화형 input 생략 — 자동화/원격 처리용)",
+    )
     args = parser.parse_args()
 
     if not args.rest_api_key:
@@ -50,20 +61,28 @@ def main() -> int:
     print("\n=== STEP 1. Open in browser, login + approve ===\n")
     print(auth_url)
     print("\n→ Copy the 'code' value from the callback page.")
-    code = input("\nPaste code here and press Enter: ").strip()
+    code = (args.code or input("\nPaste code here and press Enter: ")).strip()
     if not code:
         print("[ERROR] code empty")
         return 1
 
     print("\n=== STEP 2. Exchanging code for token... ===")
+    token_data = {
+        "grant_type": "authorization_code",
+        "client_id": args.rest_api_key,
+        "redirect_uri": args.redirect_uri,
+        "code": code,
+    }
+    # 카카오 앱에 client_secret '사용함(필수)'이 켜져 있으면 토큰 교환에도 필수.
+    # 누락 시 KOE010 보안 에러가 발생한다.
+    if args.client_secret:
+        token_data["client_secret"] = args.client_secret
+        print(f"  (client_secret 적용: {len(args.client_secret)}자)")
+    else:
+        print("  [WARN] client_secret 없음 — 앱에 시크릿 필수 설정이면 KOE010 발생 가능")
     resp = requests.post(
         "https://kauth.kakao.com/oauth/token",
-        data={
-            "grant_type": "authorization_code",
-            "client_id": args.rest_api_key,
-            "redirect_uri": args.redirect_uri,
-            "code": code,
-        },
+        data=token_data,
         timeout=15,
     )
     if not resp.ok:

@@ -29,6 +29,9 @@ env/
 *.log
 logs/
 
+# Dispatch outbox (로컬 알림 큐 — 매출 요약 포함, public repo 커밋 금지)
+dispatch_outbox/
+
 # Tokens (Cafe24 callback page query string)
 tokens/
 *.token
