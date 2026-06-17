@@ -136,9 +136,14 @@ def load_orders_mock() -> tuple[list[dict], list[tuple[str, str]], list[str]]:
 
 
 def _notifier_factory():
-    """알림 채널 팩토리. 기본=dispatch(로컬 아웃박스 → Claude PushNotification).
-    NOTIFY_CHANNEL=kakao 로 설정 시에만 레거시 카카오 사용(되돌림용)."""
-    if os.getenv("NOTIFY_CHANNEL", "dispatch").lower() == "kakao":
+    """알림 채널 팩토리.
+    - NOTIFY_CHANNEL=kakao (기본 운영): 카카오 우선 + 실패 시 dispatch 폴백(유실 방지).
+    - NOTIFY_CHANNEL=kakao_only: 카카오만(폴백 없음).
+    - 그 외(dispatch): 로컬 아웃박스 → Claude PushNotification."""
+    ch = os.getenv("NOTIFY_CHANNEL", "dispatch").lower()
+    if ch == "kakao":
+        return notify.FallbackNotifier(kakao_client.from_env(), notify.from_env())
+    if ch == "kakao_only":
         return kakao_client.from_env()
     return notify.from_env()
 

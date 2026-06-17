@@ -34,5 +34,31 @@ class DispatchNotifier:
         return {"dispatched": True, "outbox": str(QUEUE)}
 
 
+class FallbackNotifier:
+    """1차 채널(예: 카카오) 우선 발송, 실패 시 2차 채널(예: dispatch)로 전송해 유실 방지.
+
+    카카오 토큰 만료(KOE322)·KOE010·네트워크 장애 등으로 send_text가 예외를 던지면
+    2차 채널로 폴백하고, 본문 앞에 실패 사실을 표시한다.
+    kakao_client / DispatchNotifier 와 동일한 send_text(text, link_url) 인터페이스.
+    """
+
+    def __init__(self, primary: Any, fallback: Any) -> None:
+        self.primary = primary
+        self.fallback = fallback
+
+    def send_text(self, text: str, link_url: str = "") -> dict[str, Any]:
+        try:
+            return self.primary.send_text(text, link_url)
+        except Exception as e:
+            reason = f"{type(e).__name__}: {str(e)[:120]}"
+            print(f"[NOTIFY] 1차 채널 실패 → 폴백 전송: {reason}")
+            note = f"⚠️ 카카오 발송 실패({type(e).__name__}) → 백업 전달\n\n"
+            result = self.fallback.send_text(note + text, link_url)
+            if isinstance(result, dict):
+                result["fallback"] = True
+                result["primary_error"] = reason
+            return result
+
+
 def from_env() -> "DispatchNotifier":
     return DispatchNotifier()
