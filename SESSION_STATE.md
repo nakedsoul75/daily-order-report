@@ -11,12 +11,11 @@
 - **Pages**: https://nakedsoul75.github.io/daily-order-report/
 - **리포트 인덱스**: https://nakedsoul75.github.io/daily-order-report/reports/
 
-## 운영 상태 (2026-05-02 기준)
+## 운영 상태 (2026-06-18 갱신)
 
-✅ **운영 중** — Windows 작업 스케줄러로 매일 자동 실행
-- DailyOrderReport-Morning (08:30)
-- DailyOrderReport-Midday (12:30)
-- DailyOrderReport-Evening (18:00)
+✅ **운영 중** — Windows 작업 스케줄러로 매일 **1회** 자동 실행
+- DailyOrderReport-Morning (**08:40 KST**) — 전일(00:00~24:00) 매출 마감 → 카카오 발송
+- 2026-06-18 변경: **midday/evening/alert 폐지**, 하루 1회로 축소. 출하지연·재고 알림 중단.
 
 ## 기술 스택
 
@@ -236,7 +235,7 @@ powershell -ExecutionPolicy Bypass -File scripts\register_scheduler.ps1
 - refresh_token 재발급 완료(.env 갱신), `NOTIFY_CHANNEL=kakao` 복원.
 - 검증: `verify_kakao_token.py` 발급 확인 / `main.py --slot=test` 운영경로 카카오 발송 `result_code=0` / `test_kakao.py` 5건 PASS.
 
-**운영**: 내일 08:30부터 스케줄러(4작업 Ready, LastResult=0)가 카카오로 자동 발송. dispatch 큐(레거시)는 미사용 — 정리 안 함.
+**운영**: 매일 **08:40 1회** 스케줄러(DailyOrderReport-Morning)가 전일 매출을 카카오로 발송(2026-06-18 하루 1회로 축소, alert/midday/evening 폐지). dispatch 큐(레거시) 미사용.
 
 **남은 별도 이슈 (미해결, 별도 작업 필요)**: `alerts` 출하지연 헤더 "1000건" vs 실제 ~30건(카운트 버그 의심), 재고 음수(-40개) 정합성, 03-31 주문 77일+ 미출하 진위 확인.
 

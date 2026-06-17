@@ -1,5 +1,5 @@
 # Windows Task Scheduler — Daily Order Report 자동 실행 등록
-# 08:30 / 12:30 / 18:00 KST 매일 실행
+# 매일 08:40 KST 1회 실행 (전일 00:00~24:00 매출 마감 보고)
 #
 # 실행 방법 (PowerShell):
 #   cd "C:\Users\naked\Documents\agent\daily-order-report"
@@ -19,11 +19,14 @@ if (-not (Test-Path $LogDir)) {
 }
 
 $Slots = @(
-    @{Name = "DailyOrderReport-Morning";  Slot = "morning"; Time = "08:30"; Desc = "08:30 KST - Yesterday summary"},
-    @{Name = "DailyOrderReport-Alert";    Slot = "alert";   Time = "09:00"; Desc = "09:00 KST - Delay + low stock alerts"},
-    @{Name = "DailyOrderReport-Midday";   Slot = "midday";  Time = "12:30"; Desc = "12:30 KST - Morning cumulative"},
-    @{Name = "DailyOrderReport-Evening";  Slot = "evening"; Time = "18:00"; Desc = "18:00 KST - Daily close"}
+    @{Name = "DailyOrderReport-Morning";  Slot = "morning"; Time = "08:40"; Desc = "08:40 KST - 전일(00:00~24:00) 매출 마감 보고"}
 )
+
+# 기존 DailyOrderReport-* 작업 전체 제거 (구성 변경 반영: 4회 -> 1회, alert/midday/evening 폐지)
+Get-ScheduledTask -TaskName "DailyOrderReport-*" -ErrorAction SilentlyContinue | ForEach-Object {
+    Unregister-ScheduledTask -TaskName $_.TaskName -Confirm:$false
+    Write-Host "[INFO] Removed existing: $($_.TaskName)"
+}
 
 foreach ($s in $Slots) {
     $TaskName = $s.Name

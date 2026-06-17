@@ -2,12 +2,8 @@ name: Daily Order Report
 
 on:
   schedule:
-    # KST 08:30 = UTC 23:30 (전날)
-    - cron: "30 23 * * *"
-    # KST 12:30 = UTC 03:30
-    - cron: "30 3 * * *"
-    # KST 18:00 = UTC 09:00
-    - cron: "0 9 * * *"
+    # KST 08:40 = UTC 23:40 (전일 00:00~24:00 매출 1회)
+    - cron: "40 23 * * *"
   workflow_dispatch:
     inputs:
       slot:
@@ -38,15 +34,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "slot=${{ inputs.slot }}" >> $GITHUB_OUTPUT
           else
-            HOUR=$(date -u +%H)
-            MIN=$(date -u +%M)
-            if [ "$HOUR" = "23" ]; then
-              echo "slot=morning" >> $GITHUB_OUTPUT
-            elif [ "$HOUR" = "03" ]; then
-              echo "slot=midday" >> $GITHUB_OUTPUT
-            else
-              echo "slot=evening" >> $GITHUB_OUTPUT
-            fi
+            echo "slot=morning" >> $GITHUB_OUTPUT
           fi
 
       - name: Run report
