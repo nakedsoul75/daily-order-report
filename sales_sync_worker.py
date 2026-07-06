@@ -12,8 +12,9 @@
   python sales_sync_worker.py --watch --interval 30  # 폴링 주기 변경
   python sales_sync_worker.py --date 2026-07-05      # 특정 날짜 직접 수집(큐 무관, 테스트/보정)
 
-필요 .env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (+ 기존 카페24·네이버 키).
-service_role 로 RLS 우회(봇 전용). bks-os 화면은 15초마다 daily_sales 를 새로고침해 자동 표시.
+필요 .env: BKS_SUPABASE_URL, BKS_SUPABASE_SERVICE_ROLE_KEY (= bks-os '웹디비' 프로젝트) + 카페24·네이버 키.
+  (봇 기존 SUPABASE_URL 은 주문 동기화용 — 건드리지 않는다. 이 워커는 bks-os DB 로만 붙는다.)
+service_role 로 RLS 우회. bks-os 화면은 15초마다 daily_sales 를 새로고침해 자동 표시.
 """
 from __future__ import annotations
 
@@ -41,14 +42,19 @@ KST = pytz.timezone("Asia/Seoul")
 
 
 def _client():
-    """Supabase service_role 클라이언트(RLS 우회). 미설정이면 명확히 실패."""
+    """bks-os(웹디비) Supabase service_role 클라이언트(RLS 우회).
+
+    봇의 기존 SUPABASE_URL(주문 동기화용, 다른 프로젝트일 수 있음)과 섞이지 않게
+    BKS_ 전용 키를 우선 사용한다(없으면 SUPABASE_ 로 폴백). 미설정/오설정이면 명확히 실패.
+    """
     import os
 
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    url = os.getenv("BKS_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+    key = os.getenv("BKS_SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key:
         raise SystemExit(
-            "✗ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 미설정 — .env 에 봇 키를 넣으세요."
+            "✗ BKS_SUPABASE_URL / BKS_SUPABASE_SERVICE_ROLE_KEY 미설정 — "
+            ".env 에 bks-os(웹디비) 프로젝트의 Project URL · service_role 키를 넣으세요."
         )
     from supabase import create_client
 
