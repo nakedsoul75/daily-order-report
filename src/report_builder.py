@@ -129,6 +129,59 @@ def aggregate(
     }
 
 
+def build_daily_sales(
+    sale_date: str,
+    stats: dict[str, Any],
+    period_label: str,
+    slot_label: str = "매출 수집",
+) -> dict[str, Any]:
+    """aggregate() 결과 → bks-os `daily_sales` 테이블 payload.
+
+    bks-os 영업·매출 화면이 읽는 컬럼 그대로 매핑한다(총계·채널별·상품TOP·주문내역·리포트원문).
+    구매자명은 마스킹(_mask_name), 연락처는 담지 않는다(PII 최소화 — 화면 표시용 요약).
+    """
+    by_channel = [
+        {
+            "sub_channel": _subchannel_label(ch, sub, full=True),
+            "count": v["count"],
+            "amount": v["amount"],
+        }
+        for (ch, sub), v in stats["by_subchannel"].items()
+    ]
+
+    orders_out = []
+    for o in stats.get("orders_sorted", []):
+        ch, sub = _subchannel_key(o)
+        items = o.get("items", []) or []
+        product = ", ".join(
+            (it.get("name") or "").strip() for it in items if (it.get("name") or "").strip()
+        ) or "(상품정보없음)"
+        orders_out.append(
+            {
+                "channel": _subchannel_label(ch, sub, full=True),
+                "order_no": o.get("order_id") or "",
+                "product": product,
+                "qty": sum(int(it.get("qty") or 0) for it in items),
+                "amount": int(o.get("amount") or 0),
+                "status": o.get("status") or "",
+                "buyer": _mask_name(o.get("buyer_name") or ""),
+                "ordered_at": o.get("order_date") or "",
+            }
+        )
+
+    return {
+        "sale_date": sale_date,
+        "total_count": stats["total_count"],
+        "total_amount": stats["total_amount"],
+        "total_cash": stats["total_cash"],
+        "new_buyer_count": stats["new_buyer_count"],
+        "by_channel": by_channel,
+        "top_products": [[name, qty] for name, qty in stats["top_products"]],
+        "orders": orders_out,
+        "report_text": _build_header(slot_label, period_label, stats),
+    }
+
+
 def _short_order_id(oid: str) -> str:
     if not oid:
         return "?"
