@@ -148,14 +148,45 @@ def _notifier_factory():
     return notify.from_env()
 
 
+def run_backfill(days: int) -> int:
+    """최근 N일(어제부터 과거로) 하루치 매출을 수집해 bks-os daily_sales 에 채운다.
+    리포트/알림/커밋 없이 웹디비만 갱신 — 보드 공백 메우기용(workflow_dispatch)."""
+    from src import bks_daily_sales
+    now_kst = datetime.now(KST)
+    today = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+    ok = 0
+    for i in range(1, days + 1):
+        d = today - timedelta(days=i)
+        start = d
+        end = d.replace(hour=23, minute=59, second=59)
+        date_str = d.strftime("%Y-%m-%d")
+        try:
+            orders, expected, errs = load_orders_real(start, end)
+            stats = report_builder.aggregate(orders, expected_subchannels=expected)
+            label = f"{date_str} 00:00 ~ 23:59 (백필)"
+            done = bks_daily_sales.push_daily_sales(date_str, stats, label)
+            ok += 1 if done else 0
+            print(f"[BACKFILL] {date_str}: {len(orders)}건 (errors={len(errs)}, saved={done})")
+        except Exception as e:  # noqa: BLE001
+            print(f"[BACKFILL] {date_str} 실패(계속): {e}")
+    print(f"[BACKFILL] 완료 — {ok}/{days}일 daily_sales 채움")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--slot", choices=SLOTS.keys(), required=True)
+    parser.add_argument("--slot", choices=SLOTS.keys(), default="morning")
     parser.add_argument("--mock", action="store_true", help="Use mock fixtures (no API call)")
     parser.add_argument("--no-send", action="store_true", help="Print only, don't send/dispatch")
+    parser.add_argument("--backfill-days", type=int, default=0,
+                        help="최근 N일 daily_sales 백필(리포트·알림 없이 웹디비만 채움)")
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
+
+    # ===== 백필 모드: 최근 N일 daily_sales 만 채움(웹디비 보드 공백 메우기) =====
+    if args.backfill_days and args.backfill_days > 0:
+        return run_backfill(args.backfill_days)
 
     # ===== Alert mode (지연 + 재고 부족) =====
     if args.slot == "alert":
@@ -210,6 +241,15 @@ def main() -> int:
             print(f"[SUPABASE] sync error (continuing without sync): {e}")
 
     stats = report_builder.aggregate(orders, expected_subchannels=expected)
+
+    # bks-os 웹디비 daily_sales 동기화 — 단일 하루치 슬롯만(morning=전일 완전, today=오늘 누적).
+    # 비차단: 실패해도 리포트/알림은 계속. env(BKS_SUPABASE_*) 없으면 조용히 skip.
+    if not args.mock and args.slot in ("morning", "today"):
+        try:
+            from src import bks_daily_sales
+            bks_daily_sales.push_daily_sales(start.strftime("%Y-%m-%d"), stats, period_label)
+        except Exception as e:  # noqa: BLE001
+            print(f"[BKS] daily_sales 동기화 skip: {e}")
 
     # 1. Generate HTML report
     date_str = now_kst.strftime("%Y-%m-%d")
