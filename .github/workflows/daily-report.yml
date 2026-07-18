@@ -12,6 +12,10 @@ on:
         default: "test"
         type: choice
         options: [morning, midday, evening, test]
+      backfill_days:
+        description: "웹디비 daily_sales 백필 일수(0=평상시 리포트, N=최근 N일 매출만 채움)"
+        required: false
+        default: "0"
 
 jobs:
   send-report:
@@ -47,5 +51,12 @@ jobs:
           NAVER_COMMERCE_CLIENT_SECRET: ${{ secrets.NAVER_COMMERCE_CLIENT_SECRET }}
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
           KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
+          BKS_SUPABASE_URL: ${{ secrets.BKS_SUPABASE_URL }}
+          BKS_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.BKS_SUPABASE_SERVICE_ROLE_KEY }}
           TZ: Asia/Seoul
-        run: python src/main.py --slot=${{ steps.slot.outputs.slot }}
+        run: |
+          if [ "${{ github.event.inputs.backfill_days }}" != "" ] && [ "${{ github.event.inputs.backfill_days }}" != "0" ]; then
+            python src/main.py --backfill-days=${{ github.event.inputs.backfill_days }}
+          else
+            python src/main.py --slot=${{ steps.slot.outputs.slot }}
+          fi
